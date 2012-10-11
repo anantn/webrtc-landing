@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <link href='https://fonts.googleapis.com/css?family=Gentium+Basic:400,700' rel='stylesheet' type='text/css'>
+    <title>WebRTC Test Landing Page</title>
+    <style>
+      body {
+        font-family: "Gentium Basic", serif;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>WebRTC Test Landing Page</h2>
+    <p>Following are a few pages to test various aspects of WebRTC:</p>
+    <ul>
+      <li><a href="gum_test.html">getUserMedia</a></li>
+      <li><a href="pc_test.html">Single host PeerConnection</a></li>
+      <li><a href="data_test.html">Single host Data Channels</a></li>
+      <li><a href="http://gupshup.herokuapp.com/">Multi host PeerConnection</a></li>
+    </ul>
+    <h3 id="gum" style="color: red; display: none;">
+      mozGetUserMedia is missing, do you have the latest
+      <a href="http://nightly.mozilla.org/">Nightly</a> and set
+      <i>media.navigator.enabled</i> to true?
+    </h3>
+    <h3 id="pc" style="color: red; display: none;">
+      mozRTCPeerConnection is missing, do you have the latest
+      <a href="http://nightly.mozilla.org/">Nightly</a> and set
+      <i>media.peerconnection.enabled</i> to true?
+    </h3>
+    <script>
+      if (!navigator.mozGetUserMedia) {
+        document.getElementById("gum").style.display = "block";
+      }
+      if (!navigator.mozRTCPeerConnection) {
+        document.getElementById("pc").style.display = "block";
+      }
+    </script>
+  </body>
+</html>
