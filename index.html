@@ -33,7 +33,7 @@
       if (!navigator.mozGetUserMedia) {
         document.getElementById("gum").style.display = "block";
       }
-      if (!navigator.mozRTCPeerConnection) {
+      if (!window.mozRTCPeerConnection) {
         document.getElementById("pc").style.display = "block";
       }
     </script>
