@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+  <title>gUM Test Page</title>
+  <meta charset="utf-8"/>
+  <link href='https://fonts.googleapis.com/css?family=Gentium+Basic:400,700' rel='stylesheet' type='text/css'>
+  <style>
+    #main {
+      display: block;
+      margin: 0px auto;
+      text-align: center
+    }
+    #content {
+      display: block;
+    }
+    #startbuttons {
+      display: block;
+    }
+    #stopbuttons {
+      display: none;
+    }
+    #message {
+      font-size: 24px;
+      font-family: "Gentium Basic", serif;
+    }
+    h1 {
+      font-size: 40px;
+      font-family: "Gentium Basic", serif;
+    }
+    input {
+      font-size: 28px;
+      font-family: "Gentium Basic", serif;
+    }
+    p {
+      color: green;
+    }
+    p.error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <h1><b>gUM Test Page</b></h1>
+    <div id="startbuttons">
+      <input type="button" value="Video" onClick="startVideo();"/>
+      <input type="button" value="Audio" onClick="startAudio();"/>
+      <input type="button" value="Picture" onClick="startPicture();"/>
+    </div>
+    <div id="content"></div>
+    <div id="message"></div>
+    <div id="stopbuttons">
+      <input type="button" value="Stop" onClick="stopMedia();"/>
+    </div>
+
+  </div>
+</body>
+<script type="application/javascript">
+  var video_status = false;
+  var video = document.createElement("video");
+  video.setAttribute("width", 800);
+  video.setAttribute("height", 600);
+
+  var audio_status = false;
+  var audio = document.createElement("audio");
+  audio.setAttribute("controls", true);
+
+  var picture_status = false;
+  var picture = document.createElement("img");
+
+  var start = document.getElementById("startbuttons");
+  var stop = document.getElementById("stopbuttons");
+
+  var message = document.getElementById("message");
+  var content = document.getElementById("content");
+
+  var reader = new FileReader();
+
+  function startVideo() {
+    video_status = true;
+    startMedia({video:true});
+  }
+
+  function startAudio() {
+    audio_status = true;
+    startMedia({audio:true});
+  }
+
+  function startPicture() {
+    picture_status = true;
+    startMedia({picture:true});
+  }
+
+  function stopMedia() {
+    if (video_status) {
+      video.pause();
+      video.src = null;
+      content.removeChild(video);
+      video_status = false;
+    }
+    if (audio_status) {
+      audio.pause();
+      audio.src = null;
+      content.removeChild(audio);
+      audio_status = false;
+    }
+    if (picture_status) {
+      picture.src = null;
+      content.removeChild(picture);
+      picture_status = false;
+    }
+    stop.style.display = "none";
+    start.style.display = "block";
+  }
+
+  function startMedia(param) {
+    stop.style.display = "block";
+    start.style.display = "none";
+    try {
+      window.navigator.mozGetUserMedia(param, function(stream) {
+        message.innerHTML = "<p>Success!</p>";
+        if (video_status) {
+          content.appendChild(video);
+          video.mozSrcObject = stream;
+          video.play();
+        }
+        if (audio_status) {
+          content.appendChild(audio);
+          audio.mozSrcObject = stream;
+          audio.play();
+        }
+        if (picture_status) {
+          content.appendChild(picture);
+          picture.src = window.URL.createObjectURL(stream);
+          picture.onload = function(e) {
+            window.URL.revokeObjectURL(this.src);
+          }
+        }
+      }, function(err) {
+        message.innerHTML = "<p class='error'>" + err + "</p>";
+        stopMedia();
+      });
+    } catch(e) {
+      message.innerHTML = "<p class='error'>" + e + "</p>";
+      stopMedia();
+    }
+  }
+</script>
+</html>
