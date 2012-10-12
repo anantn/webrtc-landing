@@ -94,13 +94,13 @@
   function stopMedia() {
     if (video_status) {
       video.pause();
-      video.src = null;
+      video.mozSrcObject = null;
       content.removeChild(video);
       video_status = false;
     }
     if (audio_status) {
       audio.pause();
-      audio.src = null;
+      audio.mozSrcObject = null;
       content.removeChild(audio);
       audio_status = false;
     }
