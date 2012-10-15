@@ -49,7 +49,7 @@
 
   // pc2.setRemote finished, call pc2.createAnswer
   function step3() {
-    pc2.createAnswer(pc1_offer, step4, failed);
+    pc2.createAnswer(step4, failed);
   }
 
   // pc2.createAnswer finished, call pc2.setLocal
