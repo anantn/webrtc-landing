@@ -9,6 +9,7 @@
         font-family: "Gentium Basic", serif;
       }
     </style>
+    <script src="detect.js"></script>
   </head>
   <body>
     <h2>WebRTC Test Landing Page</h2>
@@ -29,12 +30,21 @@
       <a href="http://nightly.mozilla.org/">Nightly</a> and set
       <i>media.peerconnection.enabled</i> to true?
     </h3>
+    <h3 id="version" style="color: red; display: none;">
+      You have an older version of Firefox that supports WebRTC but may have
+      an incompatible API. For best results, please download the latest
+      <a href="http://nightly.mozilla.org/">Nightly</a>!
+    </h3>
     <script>
       if (!navigator.mozGetUserMedia) {
         document.getElementById("gum").style.display = "block";
       }
       if (!window.mozRTCPeerConnection) {
         document.getElementById("pc").style.display = "block";
+      }
+      if (BrowserDetect.browser != "Firefox" ||
+          parseInt(BrowserDetect.version, 10) < 19) {
+        document.getElementById("version").style.display = "block";
       }
     </script>
   </body>
