@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
   <title>gUM Test Page</title>
-  <meta charset="utf-8"/>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" charset="utf-8">
   <link href='https://fonts.googleapis.com/css?family=Gentium+Basic:400,700' rel='stylesheet' type='text/css'>
   <style>
     #main {
@@ -43,18 +43,19 @@
   <div id="main">
     <h1><b>gUM Test Page</b></h1>
     <div id="startbuttons">
-      <input type="button" value="Video" onClick="startVideo();"/>
-      <input type="button" value="Audio" onClick="startAudio();"/>
-      <input type="button" value="Picture" onClick="startPicture();"/>
+      <input value="Video" onclick="startVideo();" type="button">
+      <input value="Audio" onclick="startAudio();" type="button">
+      <input value="Audio &amp; Video" onclick="startAudioVideo();" type="button">
+      <input value="Picture" onclick="startPicture();" type="button">
     </div>
     <div id="content"></div>
     <div id="message"></div>
     <div id="stopbuttons">
-      <input type="button" value="Stop" onClick="stopMedia();"/>
+      <input value="Stop" onclick="stopMedia();" type="button">
     </div>
 
   </div>
-</body>
+
 <script type="application/javascript">
   var video_status = false;
   var video = document.createElement("video");
@@ -81,6 +82,12 @@
     startMedia({video:true});
   }
 
+  function startAudioVideo() {
+    video_status = true;
+    audio_status = true;
+    startMedia({video:true, audio:true});
+  }
+
   function startAudio() {
     audio_status = true;
     startMedia({audio:true});
@@ -97,15 +104,13 @@
       video.mozSrcObject = null;
       content.removeChild(video);
       video_status = false;
-    }
-    if (audio_status) {
+    } else if (audio_status) {
       audio.pause();
       audio.mozSrcObject = null;
       content.removeChild(audio);
       audio_status = false;
-    }
-    if (picture_status) {
-      picture.src = null;
+    } else if (picture_status) {
+      picture.mozSrcObject = null;
       content.removeChild(picture);
       picture_status = false;
     }
@@ -123,13 +128,11 @@
           content.appendChild(video);
           video.mozSrcObject = stream;
           video.play();
-        }
-        if (audio_status) {
+        } else if (audio_status) {
           content.appendChild(audio);
           audio.mozSrcObject = stream;
           audio.play();
-        }
-        if (picture_status) {
+        } else if (picture_status) {
           content.appendChild(picture);
           picture.src = window.URL.createObjectURL(stream);
           picture.onload = function(e) {
@@ -146,4 +149,6 @@
     }
   }
 </script>
+
+</body>
 </html>
