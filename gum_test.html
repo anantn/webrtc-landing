@@ -50,13 +50,13 @@
     </div>
     <div id="content"></div>
     <div id="message"></div>
-    <div id="stopbuttons">
+    <div style="display: none;" id="stopbuttons">
       <input value="Stop" onclick="stopMedia();" type="button">
+      <input value="Pause/Play" onclick="pauseMedia();" type="button">
     </div>
-
   </div>
 
-<script type="application/javascript">
+  <script type="application/javascript">
   var video_status = false;
   var video = document.createElement("video");
   video.setAttribute("width", 800);
@@ -75,7 +75,7 @@
   var message = document.getElementById("message");
   var content = document.getElementById("content");
 
-  var reader = new FileReader();
+  var saved_stream = null;
 
   function startVideo() {
     video_status = true;
@@ -100,12 +100,12 @@
 
   function stopMedia() {
     if (video_status) {
-      video.pause();
+      video.mozSrcObject.stop();
       video.mozSrcObject = null;
       content.removeChild(video);
       video_status = false;
     } else if (audio_status) {
-      audio.pause();
+      audio.mozSrcObject.stop();
       audio.mozSrcObject = null;
       content.removeChild(audio);
       audio_status = false;
@@ -114,8 +114,32 @@
       content.removeChild(picture);
       picture_status = false;
     }
+    saved_stream = null;
     stop.style.display = "none";
     start.style.display = "block";
+  }
+
+  function pauseMedia() {
+    if (saved_stream) {
+      if (video_status) {
+        video.mozSrcObject = saved_stream;
+        video.play();
+      } else if (audio_status) {
+        audio.mozSrcObject = saved_stream;
+        audio.play();
+      }
+      saved_stream = null;
+    } else {
+      if (video_status) {
+        video.pause();
+        saved_stream = video.mozSrcObject;
+        video.mozSrcObject = null;
+      } else if (audio_status) {
+        audio.pause();
+        saved_stream = audio.mozSrcObject;
+        audio.mozSrcObject = null;
+      }
+    }
   }
 
   function startMedia(param) {
