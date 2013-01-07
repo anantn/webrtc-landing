@@ -132,16 +132,14 @@
       dc2 = channel;
       datachannels[num_channels] = channel;
       num_channels++;
-      log("pc2 created channel " + dc2 + " binarytype = " + dc2.binaryType);
       channel.binaryType = "blob";
-      log("pc2 new binarytype = " + dc2.binaryType);
 
       channel.onmessage = function(evt) {
         iter2 = iter2 + 1;
         if (evt.data instanceof Blob) {
           fancy_log("*** pc1 sent Blob: " + evt.data + ", length=" + evt.data.size,"red");
         } else {
-          fancy_log("*** pc1 said: " + evt.data + ", length=" + evt.data.length,"red");
+          fancy_log("pc1 said: " + evt.data,"red");
         }
       };
       channel.onopen = function() {
@@ -151,18 +149,9 @@
       channel.onclose = function() {
         log("*** pc2 onclose fired");
       };
-      log("*** pc2 state:" + channel.readyState);
-      // There's a race condition with onopen; if the channel is already
-      // open it should fire after onDataChannel -- state should normally be 0 here
-      if (channel.readyState != 0) {
-        log("*** pc2 no onopen??! possible race");
-      }
-
     };
     pc2.onconnection = function() {
       log("pc2 onConnection ");
-      //dc2 = pc2.createDataChannel();
-      //log("pc2 created channel " + dc2);
     }
     pc2.onclosedconnection = function() {
       log("pc2 onClosedConnection ");
@@ -194,7 +183,7 @@
   // pc1.setRemote finished, make a data channel
   function step6() {
     log("HIP HIP HOORAY");
-    setTimeout(step7,2000);
+    setTimeout(step7,0);
   }
 
   function step7() {
@@ -206,6 +195,9 @@
 function start() {
     button.innerHTML = "Stop!";
     button.onclick = stop;
+    while (datawindow.firstChild) {
+      datawindow.removeChild(datawindow.firstChild);
+    }
 
     pc1 = new mozRTCPeerConnection();
 
@@ -224,7 +216,7 @@ function start() {
         if (evt.data instanceof Blob) {
           fancy_log("*** pc2 sent Blob: " + evt.data + ", length=" + evt.data.size,"blue");
         } else {
-          fancy_log('pc2 said: ' + evt.data + ", length=" + evt.data.length,"blue");
+          fancy_log('pc2 said: ' + evt.data,"blue");
         }
       }
 
@@ -236,26 +228,17 @@ function start() {
       channel.onclose = function() {
         log("pc1 onclose fired");
       };
-      log("pc1 state:" + channel.readyState);
-      // There's a race condition with onopen; if the channel is already
-      // open it should fire after onDataChannel -- state should normally be 0 here
-      if (channel.readyState != 0) {
-        log("*** pc1 no onopen??! possible race");
-      }
     }
     pc1.onconnection = function() {
       log("pc1 onConnection ");
       dc1 = pc1.createDataChannel("This is pc1",{}); // reliable (TCP-like)
   //  dc1 = pc1.createDataChannel("This is pc1",{outOfOrderAllowed: true, maxRetransmitNum: 0}); // unreliable (UDP-like)
-      log("pc1 created channel " + dc1 + " binarytype = " + dc1.binaryType);
       channel = dc1;
       channel.binaryType = "blob";
-      log("pc1 new binarytype = " + dc1.binaryType);
 
-      // Since we create the datachannel, don't wait for onDataChannel!
       channel.onmessage = function(evt) {
         if (evt.data instanceof Blob) {
-          fancy_log("*** pc2 sent Blob: " + evt.data + ", length=" + evt.data.size,"blue");
+          fancy_log("*** pc2 sent Blob: " + evt.data,"blue");
         } else {
           fancy_log('pc2 said: ' + evt.data,"blue");
         }
@@ -263,12 +246,10 @@ function start() {
       channel.onopen = function() {
         log("pc1 onopen fired for " + channel);
        channel.send("pc1 says Hello...");
-       log("pc1 state: " + channel.state);
       }
       channel.onclose = function() {
         log("pc1 onclose fired");
       };
-      log("pc1 state:" + channel.readyState);
     }
     pc1.onclosedconnection = function() {
       log("pc1 onClosedConnection ");
@@ -282,6 +263,7 @@ function start() {
   }
 
   function stop() {
+    log("closed");
     pc1.close();
     pc2.close();
 
