@@ -231,8 +231,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
         message.innerHTML = "<p>Success!</p>";
         if (video_status) {
           content.appendChild(video);
-          attachMediaStream(video, stream);
-          setTimeout(function() { video.play(); }, 50);
+          setTimeout(function() { attachMediaStream(video, stream); video.play(); }, 50);
           // Chrome 24 (at least) won't play the video if we just call play()
           // video.play();
           frames.innerHTML = '';
