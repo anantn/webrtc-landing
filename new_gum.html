@@ -136,7 +136,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
     // Attach a media stream to an element.
     attachMediaStream = function(element, stream) {
       element.src = window.webkitURL.createObjectURL(stream);
-      message.innerHTML = url;
+      message.innerHTML = "<p>" + element.src + "</p>";
       element._saved_stream = stream;
     };
 
