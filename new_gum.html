@@ -70,7 +70,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var video = document.createElement("video");
   video.setAttribute("width", 640);
   video.setAttribute("height", 480);
-  video.setAttribute("autoplay","");
+  video.setAttribute("autoplay","autoplay");
 
   var snapshots = [];
 
@@ -92,7 +92,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var saved_stream = null;
   var capturing = false;
 
-  // polyfill code from webrtc.org
+  // polyfill based on code from webrtc.org
   // http://review.webrtc.org/930012/patch/2001/3002
   var getUserMedia = null;
   var attachMediaStream = null;
@@ -100,7 +100,8 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var stopMediaStream = null;
 
   window.URL = window.URL || window.webkitURL;
-  if (navigator.mozGetUserMedia) {
+
+if (navigator.mozGetUserMedia) {
     console.log("This appears to be Firefox");
 
     // The RTCPeerConnection object.
@@ -231,9 +232,8 @@ Note: Audio will feedback unless you use a headset!<br><br>
         message.innerHTML = "<p>Success!</p>";
         if (video_status) {
           content.appendChild(video);
-          setTimeout(function() { attachMediaStream(video, stream); video.play(); }, 50);
-          // Chrome 24 (at least) won't play the video if we just call play()
-          // video.play();
+          attachMediaStream(video, stream);
+          video.play();
           frames.innerHTML = '';
           stopbuttons.appendChild(snapshot);
         } else if (audio_status) {
