@@ -72,6 +72,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var video = document.createElement("video");
   video.setAttribute("width", 640);
   video.setAttribute("height", 480);
+  video.setAttribute("autoplay","autoplay");
 
   var snapshots = [];
 
@@ -93,31 +94,96 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var saved_stream = null;
   var capturing = false;
 
+  // polyfill based on code from webrtc.org
+  // http://review.webrtc.org/930012/patch/2001/3002
+  var getUserMedia = null;
+  var attachMediaStream = null;
+  var detachMediaStream = null;
+  var stopMediaStream = null;
+
+  window.URL = window.URL || window.webkitURL;
+
+  if (navigator.mozGetUserMedia) {
+    console.log("This appears to be Firefox");
+
+    // The RTCPeerConnection object.
+    RTCPeerConnection = mozRTCPeerConnection;
+
+    // Get UserMedia (only difference is the prefix).
+    // Code from Adam Barth.
+    getUserMedia = navigator.mozGetUserMedia.bind(navigator);
+
+    // Attach a media stream to an element.
+    attachMediaStream = function(element, stream) {
+      console.log("Attaching media stream");
+      element.mozSrcObject = stream;
+    };
+
+    detachMediaStream = function(element) {
+      var temp = element.mozSrcObject;
+      element.mozSrcObject = null;
+      return temp;
+    };
+
+    stopMediaStream = function(element) {
+	element.mozSrcObject.stop();
+    }
+  } else if (navigator.webkitGetUserMedia) {
+    console.log("This appears to be Chrome");
+
+    // The RTCPeerConnection object.
+    RTCPeerConnection = webkitRTCPeerConnection;
+   
+    // Get UserMedia (only difference is the prefix).
+    // Code from Adam Barth.
+    getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
+   
+    // Attach a media stream to an element.
+    attachMediaStream = function(element, stream) {
+      element.src = window.URL.createObjectURL(stream);
+      //message.innerHTML = "<p>" + element.src + "</p>";
+      element._saved_stream = stream;
+    };
+
+    detachMediaStream = function(element) {
+      var temp = element._saved_stream;
+      element.src = null;
+      element._saved_stream = null;
+      return temp;
+    };
+
+    stopMediaStream = function(element) {
+      element._saved_stream.stop();
+    }
+  } else {
+    console.log("Browser does not appear to be WebRTC-capable");
+  }
+
   function startVideo() {
     video_status = true;
-    startMedia({video:true});
+    startMedia({video: true});
   }
 
   function startAudioVideo() {
     video_status = true;
     audio_status = true;
-    startMedia({video:true, audio:true});
+    startMedia({video: true, audio: true});
   }
 
   function startAudio() {
     audio_status = true;
-    startMedia({audio:true});
+    startMedia({audio: true});
   }
 
   function startPicture() {
     picture_status = true;
-    startMedia({picture:true});
+    startMedia({picture: true});
   }
 
   function stopMedia() {
     if (video_status) {
-      video.mozSrcObject.stop();
-      video.mozSrcObject = null;
+      stopMediaStream(video);
+      detachMediaStream(video);
       content.removeChild(video);
       stopbuttons.removeChild(snapshot);
       snapshot.value = "Snapshot";
@@ -125,12 +191,12 @@ Note: Audio will feedback unless you use a headset!<br><br>
       capturing = false;
       video_status = false;
     } else if (audio_status) {
-      audio.mozSrcObject.stop();
-      audio.mozSrcObject = null;
+      stopMediaStream(audio);
+      detachMediaStream(audio);
       content.removeChild(audio);
       audio_status = false;
     } else if (picture_status) {
-      picture.mozSrcObject = null;
+      detachMediaStream(picture);
       content.removeChild(picture);
       picture_status = false;
     }
@@ -142,22 +208,20 @@ Note: Audio will feedback unless you use a headset!<br><br>
   function pauseMedia() {
     if (saved_stream) {
       if (video_status) {
-        video.mozSrcObject = saved_stream;
-        video.play();
+        attachMediaStream(video, saved_stream);
+	video.play();
       } else if (audio_status) {
-        audio.mozSrcObject = saved_stream;
-        audio.play();
+        attachMediaStream(audio, saved_stream);
+	audio.play();
       }
       saved_stream = null;
     } else {
       if (video_status) {
         video.pause();
-        saved_stream = video.mozSrcObject;
-        video.mozSrcObject = null;
+        saved_stream = detachMediaStream(video);
       } else if (audio_status) {
         audio.pause();
-        saved_stream = audio.mozSrcObject;
-        audio.mozSrcObject = null;
+        saved_stream = detachMediaStream(audio);
       }
     }
   }
@@ -166,17 +230,17 @@ Note: Audio will feedback unless you use a headset!<br><br>
     stop.style.display = "block";
     start.style.display = "none";
     try {
-      window.navigator.mozGetUserMedia(param, function(stream) {
+      getUserMedia(param, function(stream) {
         message.innerHTML = "<p>Success!</p>";
         if (video_status) {
           content.appendChild(video);
-          video.mozSrcObject = stream;
+          attachMediaStream(video, stream);
           video.play();
           frames.innerHTML = '';
           stopbuttons.appendChild(snapshot);
         } else if (audio_status) {
           content.appendChild(audio);
-          audio.mozSrcObject = stream;
+          attachMediaStream(audio, stream);
           audio.play();
         } else if (picture_status) {
           content.appendChild(picture);
