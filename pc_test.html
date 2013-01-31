@@ -76,6 +76,7 @@
 
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
+    log("Offer:  " + offer.sdp);
     pc1_offer = offer;
     pc1.setLocalDescription(offer, step2, failed);
   }
@@ -145,7 +146,7 @@
           localvideo2.play();
           pc2.addStream(video2);
           // Start the signaling.
-          pc1.createOffer(step1, failed);
+          pc1.createOffer(step1, failed, { "mandatory": { "MozDontOfferDataChannel": true } });
         }, failed);
       }, failed);
     }, failed);
