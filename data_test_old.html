@@ -6,17 +6,8 @@
 
 <table width=100% height=100%>
 <tr><td><h1>Simple WebRTC Data Channel Test</h1></td></tr>
-<tr><td>(Note: this JS code is REALLY UGLY)<b>
-     The API and wireline protocol changed on Nightly 2013/4/2 (and will in the
-     first Aurora 22). Summary of changes is
-     <a href="DataChannel_changes.html">here</a>.  You will not be able to
-     connect DataConnections across the change!
-</td></tr>
-<tr><td><div>
-     <button id="thebutton" onClick="start();">Start!</button>
-     <input type="checkbox" id="preset" value="Use pre-negotiated channel 5">
-     <label for="preset">Use pre-negotiated channel 5</label>
-</div><br/></td></tr>
+<tr><td>(Note: this JS code is REALLY UGLY)</td></tr>
+<tr><td><div><button id="thebutton" onClick="start();">Start!</button></div><br/></td></tr>
 <tr><td><form id="pc1_form" action="javascript:sendit(1)">
 <div>pc1 says: <input id="pc1_input" type="text" value="type here" onKeyPress="return submitenter(this,event)"/>
 <input type="submit"/></div></form></td>
@@ -42,8 +33,6 @@
   let blob_pc1 = document.getElementById("pc1_browse");
   let blob_pc2 = document.getElementById("pc2_browse");
   let datawindow = document.getElementById("datawindow");
-  let preset = document.getElementById("preset");
-  preset.checked = false;
 
   let pc1;
   let pc2;
@@ -59,8 +48,6 @@
   let pc2_answer;
   let iter = 0;
   let iter2 = 0;
-
-  let fake_audio;
 
   function log(msg) {
     let div = document.getElementById("datawindow");
@@ -126,7 +113,7 @@
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
     pc1_offer = offer;
-    log("Offer: " + offer.sdp);
+log("Offer: " + pc1_offer.sdp);
     pc1.setLocalDescription(offer, step1_5, failed);
   }
 
@@ -138,11 +125,10 @@
   function step2() {
     pc2 = new mozRTCPeerConnection();
 
-    pc2.ondatachannel = function(event) {
-      channel = event.channel;
+    pc2.ondatachannel = function(channel) {
       log("pc2 onDataChannel [" +num_channels + "] = " + channel +
-          ", label='" + channel.label + "'" +
-          ", protocol='" + channel.protocol + "'");
+          ", label='" + channel.label + "'");
+      dc2 = channel;
       datachannels[num_channels] = channel;
       num_channels++;
       channel.binaryType = "blob";
@@ -170,7 +156,6 @@
       log("pc2 onClosedConnection ");
     }
 
-    pc2.addStream(fake_audio);
     pc2.onaddstream = function(obj) {
       log("pc2 got remote stream from pc1 " + obj.type);
     }
@@ -190,12 +175,20 @@
 
   // pc2.setLocal finished, call pc1.setRemote
   function step5() {
+log("Answer: " + pc2_answer.sdp);
     pc1.setRemoteDescription(pc2_answer, step6, failed);
   }
 
   // pc1.setRemote finished, make a data channel
   function step6() {
     log("HIP HIP HOORAY");
+//    setTimeout(step7,0);
+  }
+
+  function step7() {
+    pc1.connectDataConnection(5000,5001);
+    pc2.connectDataConnection(5001,5000);
+    log("connect for data channel called");
   }
 
 function start() {
@@ -211,12 +204,10 @@ function start() {
       log("pc1 got remote stream from pc2 " + obj.type);
     }
 
-    pc1.ondatachannel = function(event) {
-      channel = event.channel;
+    pc1.ondatachannel = function(channel) {
       // In case pc2 opens a channel
       log("pc1 onDataChannel [" +num_channels + "] = " + channel +
-          ", label='" + channel.label + "'" +
-          ", protocol='" + channel.protocol + "'");
+          ", label='" + channel.label + "'");
       datachannels[num_channels] = channel;
       num_channels++;
 
@@ -239,36 +230,8 @@ function start() {
     }
     pc1.onconnection = function() {
       log("pc1 onConnection ");
-      dict = preset.checked ? {protocol:"text/chat", preset:true, stream:5} : {}; // reliable (TCP-like)
-      dc2 = pc2.createDataChannel("This is pc2", dict);
-      channel = dc2;
-      channel.binaryType = "blob";
-
-      channel.onmessage = function(evt) {
-        if (evt.data instanceof Blob) {
-          fancy_log("*** pc1 sent Blob: " + evt.data,"blue");
-        } else {
-          fancy_log('pc1 said: ' + evt.data,"blue");
-        }
-      }
-      channel.onopen = function() {
-        log("pc1 onopen fired for " + channel);
-       channel.send("pc2 says Hello...");
-      }
-      channel.onclose = function() {
-        log("pc2 onclose fired");
-      };
-    }
-    pc1.onclosedconnection = function() {
-      log("pc1 onClosedConnection ");
-    }
-
-    navigator.mozGetUserMedia({audio:true, fake:true}, function(s) {
-      pc1.addStream(s);
-      fake_audio = s;
-
-      dict = preset.checked ? {protocol: "text/plain", preset:true, stream:5} : {}; // reliable (TCP-like)
-      dc1 = pc1.createDataChannel("This is pc1", dict);
+      dc1 = pc1.createDataChannel("This is pc1",{}); // reliable (TCP-like)
+  //  dc1 = pc1.createDataChannel("This is pc1",{outOfOrderAllowed: true, maxRetransmitNum: 0}); // unreliable (UDP-like)
       channel = dc1;
       channel.binaryType = "blob";
 
@@ -286,9 +249,12 @@ function start() {
       channel.onclose = function() {
         log("pc1 onclose fired");
       };
+    }
+    pc1.onclosedconnection = function() {
+      log("pc1 onClosedConnection ");
+    }
 
-      pc1.createOffer(step1, failed);
-    }, function(err) { alert("Error " + err); });
+    pc1.createOffer(step1, failed);
   }
 
   function stop() {
