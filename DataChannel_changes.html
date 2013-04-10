@@ -7,6 +7,18 @@
 
 <body>
 <h1>WebRTC DataChannel API/protocol changes have landed</h1>
+<table bgcolor="#e00000"><tr><td><b>Update 2013/4/9:</b><br>
+<blockquote>An incompatible change to fix a bug in the major update from 4/2 landed on
+mozilla-central (Nightly) and will be in the 2013/4/10 build.  This means
+that builds from before that change and after it will not be able to talk
+successfully, except perhaps if both protocol and label are empty.  The
+changes landed on Aurora at the same time, but likely were incorporated
+into any builds for 4/9 and after.<p>
+We apologize, but because of the bug it was impossible to avoid making an
+incompatible change to fix it, and we didn't want the protocol to carry a
+quirk forever.  We hope to avoid any future incompatible changes.
+</blockquote></td></tr></table>
+
 In landings for the 2013/4/2 Nightly and for Aurora 22a1, both the API and
 the wireline protocol for WebRTC have changed in an incompatible manner.
 You will have to revise your code, and also browsers from before the change
@@ -84,6 +96,6 @@ And I added to the DataChannel object webidl:
 <hr>
 <address></address>
 <!-- hhmts start -->
-Last modified: Tue Apr  2 16:21:00 EDT 2013
+Last modified: Wed Apr 10 01:54:20 EDT 2013
 <!-- hhmts end -->
 </body> </html>
