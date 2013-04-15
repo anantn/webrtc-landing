@@ -16,18 +16,19 @@
 <tr><td><div>
      <button id="thebutton" onClick="start();">Start!</button>
      <input type="checkbox" id="preset" value="Use pre-negotiated channel 5">
-     <label for="preset">Use pre-negotiated channel 5</label>
+     <label for="preset">Use pre-negotiated channel</label>
+     <input type="number" id="stream_num" value="5">
 </div><br/></td></tr>
 <tr><td><form id="pc1_form" action="javascript:sendit(1)">
 <div>pc1 says: <input id="pc1_input" type="text" value="type here" onKeyPress="return submitenter(this,event)"/>
-<input type="submit"/></div></form></td>
-<td><form id="pc1_blob" action="javascript:sendblob(1)">
+<input type="submit"/></div></form></td></tr>
+<tr><td><form id="pc1_blob" action="javascript:sendblob(1)">
 <div>pc1 sends a blob: <input id="pc1_browse" type="file"/>
 <input type="submit"/></div></form></td></tr>
 <tr><td><form id="pc2_form" action="javascript:sendit(2)">
 <div>pc2 says: <input id="pc2_input" type="text" value="type here" onKeyPress="return submitenter(this,event)"/>
-<input type="submit"/></div></form></td>
-<td><form id="pc2_blob" action="javascript:sendblob(2)">
+<input type="submit"/></div></form></td></tr>
+<tr><td><form id="pc2_blob" action="javascript:sendblob(2)">
 <div>pc2 sends a blob: <input id="pc2_browse" type="file"/>
 <input type="submit"/></div></form></td></tr>
 <tr><td><div id="datawindow" style="
@@ -45,6 +46,7 @@
   let datawindow = document.getElementById("datawindow");
   let preset = document.getElementById("preset");
   preset.checked = false;
+  let stream_num = document.getElementById("stream_num");
 
   let pc1;
   let pc2;
@@ -240,7 +242,7 @@ function start() {
     }
     pc1.onconnection = function() {
       log("pc1 onConnection ");
-      dict = preset.checked ? {protocol:"text/chat", preset:true, stream:5} : {}; // reliable (TCP-like)
+      dict = preset.checked ? {protocol:"text/chat", preset:true, stream:stream_num.value} : {}; // reliable (TCP-like)
       dc2 = pc2.createDataChannel("This is pc2", dict);
       channel = dc2;
       channel.binaryType = "blob";
@@ -268,7 +270,7 @@ function start() {
       pc1.addStream(s);
       fake_audio = s;
 
-      dict = preset.checked ? {protocol: "text/plain", preset:true, stream:5} : {}; // reliable (TCP-like)
+      dict = preset.checked ? {protocol: "text/plain", preset:true, stream:stream_num.value} : {}; // reliable (TCP-like)
       dc1 = pc1.createDataChannel("This is pc1", dict);
       channel = dc1;
       channel.binaryType = "blob";
