@@ -9,11 +9,13 @@
     <script src="bootstrap.js"></script>
     <link rel="stylesheet" href="bootstrap.css">
     <title>WebRTC Test Landing Page</title>
+    <!--
     <style>
       body {
         font-family: "Gentium Basic", serif;
       }
     </style>
+    -->
   </head>
   <body>
 	<div class="row">
@@ -46,7 +48,7 @@
 		You have an older version of Firefox that supports WebRTC but may have an incompatible API. For best results, please download the latest <a href="http://nightly.mozilla.org/">Nightly</a>!
 	</div>
 	
-	<div class="row">
+	<div class="row offset1">
 			<div class="span3">
 			<div class="well">
 				<h3>getUserMedia example</h3>      
@@ -79,7 +81,12 @@
 			</div>
 			</div>
 	</div>
-	<div class="row">
+	
+	<div class="row offset1">
+		<b>Tests for older FF versions</b>
+	</div>
+	
+	<div class="row offset1">
 	
 			<div class="span3">
 			<div class="well">
@@ -98,32 +105,7 @@
 			</div>
 	</div>
 	
-	
-   <!--remove--> 
-    <ul>
-      <li><a href="gum_test.html">getUserMedia example</a></li>
-      <li><a href="pc_test.html">Single host 'chat' via mozRTCPeerConnection</a></li>
-      <li><a href="data_test.html">Single host DataChannels demo</a></li>
-      <li><a href="http://nightly-gupshup.herokuapp.com/">Multi-person video chat via
-          mozRTCPeerConnection for Nightly</a> -- <a
-          href="https://github.com/jesup/nightly-gupshup.git">code on github</a></li>
-    </ul>
-    <!--remove-->
-    <b>Tests for older FF versions</b>
-    <ul>
-      <li><a href="http://gupshup.herokuapp.com/">Video chat via mozRTCPeerConnection
-          (for Aurora/Firefox 20 only!)</a> -- <a
-          href="https://github.com/anantn/gupshup.git">code on
-          github</a></li>
-      <li><a href="data_test_old.html">Old single-host DataChannels demo
-          (FF21 and old FF22 Nightlies)</a><br>
-	   The DataChannel wireline protocol and JS API changed at the FF22
-	   uplift to Aurora (2013/4/2); <b><font
-	   style="background-color:red">and also a backwards-incompatible
-	   wireline bugfix on 2013/4/9</font></b>
-	   see <a href="DataChannel_changes.html">DataChannel Changes</a>.
-      </li>
-    </ul>
+   
     
     <script>
       if (!navigator.mozGetUserMedia) {
