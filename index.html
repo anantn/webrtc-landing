@@ -43,7 +43,7 @@
   <div class="row offset2">
       <div class="span3">
       <div class="well">
-        <h3>getUserMedia example</h3>      
+        <h3>getUserMedia example</h3>
         <p></p>
         <p><a class="btn btn-large" href="gum_test.html">Try Demo</a></p>
       </div>
@@ -51,7 +51,7 @@
     
       <div class="span3">
       <div class="well">
-        <h3>Single host 'chat'</h3>      
+        <h3>Single host 'chat'</h3>
         <p>Single host 'chat' via mozRTCPeerConnection.</p>
         <p><a class="btn btn-large" href="pc_test.html">Try Demo</a></p>
       </div>
@@ -59,17 +59,16 @@
     
       <div class="span3">
       <div class="well">
-        <h3>Single host DataChannels</h3>      
-        <p>Code on <a href="https://github.com/jesup/nightly-gupshup.git">github</a>.</p>
+        <h3>Single host DataChannels</h3>
         <p><a class="btn btn-large" href="data_test.html">Try Demo</a></p>
       </div>
       </div>
-    
+
       <div class="span4">
       <div class="well">
-        <h3>Multi-person video chat</h3>      
-        <p>Multi-person video chat via mozRTCPeerConnection for Nightly. Code on <a href="http://github.com/anantn/gupshup.git">github</a>.</p>
-        <p><a class="btn btn-large" href="http://gupshup.herokuapp.com/">Try Demo</a></p>
+        <h3>Multi-person video chat</h3>
+        <p>Multi-person video chat via mozRTCPeerConnection for Nightly. Code on <a href="https://github.com/jesup/nightly-gupshup.git">github</a>.</p>
+        <p><a class="btn btn-large" href="http://nightly-gupshup.herokuapp.com/">Try Demo</a></p>
       </div>
       </div>
   </div>
@@ -81,39 +80,35 @@
     <h2>Tests for older FF versions</h2>
   </div>
 
-  
   <div class="row offset2">
-  
-      <div class="span6">
-      <div class="well">
-        <h3>Video chat via mozRTCPeerConnection</h3>      
-        <p>For Aurora/Firefox 20 only! Code on <a href="https://github.com/anantn/gupshup.git">github</a></p>
-        <p><a class="btn btn-large" href="http://gupshup.herokuapp.com/">Try Demo</a></p>
-      </div>
-      </div>
-      
-      <div class="span6">
-      <div class="well">
-        <h3>Old single-host DataChannels</h3>      
-        <p>FF21 and old FF22 Nightlies! The DataChannel wireline protocol and JS API changed at the FF22 uplift to Aurora (2013/4/2); <font style="color:red">and also a backwards-incompatible wireline bugfix on 2013/4/9</font> see <a href="DataChannel_changes.html">DataChannel Changes</a>.</p>
-        <p><a class="btn btn-large" href="data_test_old.html">Try Demo</a></p>
-      </div>
-      </div>
-  </div>
-  
-   
+    <div class="span6">
+    <div class="well">
+      <h3>Video chat via mozRTCPeerConnection</h3>
+      <p>For Aurora/Firefox 20 only! Code on <a href="https://github.com/anantn/gupshup.git">github</a></p>
+      <p><a class="btn btn-large" href="http://gupshup.herokuapp.com/">Try Demo</a></p>
+    </div>
+    </div>
     
-    <script>
-      if (!navigator.mozGetUserMedia) {
-        document.getElementById("gum").style.display = "block";
-      }
-      if (!window.mozRTCPeerConnection) {
-        document.getElementById("pc").style.display = "block";
-      }
-      if (BrowserDetect.browser != "Firefox" ||
-          parseInt(BrowserDetect.version, 10) < 19) {
-        document.getElementById("version").style.display = "block";
-      }
-    </script>
-  </body>
+    <div class="span6">
+    <div class="well">
+      <h3>Old single-host DataChannels</h3>
+      <p>FF21 and old FF22 Nightlies! The DataChannel wireline protocol and JS API changed at the FF22 uplift to Aurora (2013/4/2); <font style="color:red">and also a backwards-incompatible wireline bugfix on 2013/4/9</font> see <a href="DataChannel_changes.html">DataChannel Changes</a>.</p>
+      <p><a class="btn btn-large" href="data_test_old.html">Try Demo</a></p>
+    </div>
+    </div>
+  </div>
+
+  <script>
+    if (!navigator.mozGetUserMedia) {
+      document.getElementById("gum").style.display = "block";
+    }
+    if (!window.mozRTCPeerConnection) {
+      document.getElementById("pc").style.display = "block";
+    }
+    if (BrowserDetect.browser != "Firefox" ||
+        parseInt(BrowserDetect.version, 10) < 19) {
+      document.getElementById("version").style.display = "block";
+    }
+  </script>
+</body>
 </html>
