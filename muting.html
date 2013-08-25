@@ -40,13 +40,19 @@
 <label for="disable_video">Disable video</label>
 <input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
 <label for="disable_audio">Disable audio</label>
+<input type="checkbox" id="mute_local" value="Mute local"
+     onclick="localvideo1.muted=!localvideo1.muted;}">
+<label for="disable_audio">Mute local</label>
+<input type="checkbox" id="mute_remote" value="Mute remote"
+     onclick="pc2video.muted=!pc2video.muted;}">
+<label for="disable_audio">Mute remote</label>
 </div><br>
 <div>
 <div id="player1">
 <video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
-<video tabindex="0" id="localvideo1" controls="controls" height="120" width="160" muted></video></div>
+<video tabindex="0" id="localvideo1" controls="controls" height="120" width="160"></video></div>
 <div id="player2">
-<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640"></video>
 <video tabindex="0" id="localvideo2" controls="controls" height="120" width="160" muted></video></div><br>
 <br style="clear: left;" />
 </div>
