@@ -144,6 +144,7 @@
     pc2.ondatachannel = function(event) {
       channel = event.channel;
       log("pc2 onDataChannel [" +num_channels + "] = " + channel +
+          ", stream=" + channel.stream + " id=" + channel.id +
           ", label='" + channel.label + "'" +
           ", protocol='" + channel.protocol + "'");
       datachannels[num_channels] = channel;
@@ -188,6 +189,7 @@
   // pc2.createAnswer finished, call pc2.setLocal
   function step4(answer) {
     pc2_answer = answer;
+    log("Answer: " + answer.sdp);
     pc2.setLocalDescription(answer, step5, failed);
   }
 
@@ -218,6 +220,7 @@ function start() {
       channel = event.channel;
       // In case pc2 opens a channel
       log("pc1 onDataChannel [" +num_channels + "] = " + channel +
+          ", stream=" + channel.stream + " id=" + channel.id +
           ", label='" + channel.label + "'" +
           ", protocol='" + channel.protocol + "'");
       datachannels[num_channels] = channel;
@@ -242,10 +245,14 @@ function start() {
     }
     pc1.onconnection = function() {
       log("pc1 onConnection ");
-      dict = preset.checked ? {protocol:"text/chat", preset:true, stream:stream_num.value} : {}; // reliable (TCP-like)
+      dict = preset.checked ? {protocol:"text/chat", negotiated:true,
+                               id:stream_num.value } : {}; // reliable (TCP-like)
       dc2 = pc2.createDataChannel("This is pc2", dict);
       channel = dc2;
+      log("pc2 ordered=" + pc2.ordered);
       channel.binaryType = "blob";
+      log("pc2 label " + channel.label +
+          ", stream=" + channel.stream + " id=" + channel.id);
 
       channel.onmessage = function(evt) {
         if (evt.data instanceof Blob) {
@@ -270,10 +277,14 @@ function start() {
       pc1.addStream(s);
       fake_audio = s;
 
-      dict = preset.checked ? {protocol: "text/plain", preset:true, stream:stream_num.value} : {}; // reliable (TCP-like)
+      dict = preset.checked ? {protocol: "text/plain", negotiated:true,
+                               id:stream_num.value} : {}; // reliable (TCP-like)
       dc1 = pc1.createDataChannel("This is pc1", dict);
       channel = dc1;
+      log("pc1 ordered=" + pc1.ordered);
       channel.binaryType = "blob";
+      log("pc1 label " + channel.label +
+          ", stream=" + channel.stream + " id=" + channel.id);
 
       channel.onmessage = function(evt) {
         if (evt.data instanceof Blob) {
