@@ -67,6 +67,8 @@
   let iter = 0;
   let iter2 = 0;
 
+  let fake_audio;
+
   function log(msg) {
     let div = document.getElementById("datawindow");
     div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
@@ -159,12 +161,13 @@
         if (evt.data instanceof Blob) {
           fancy_log("*** pc1 sent Blob: " + evt.data + ", length=" + evt.data.size,"red");
         } else {
-          fancy_log("pc1 said: " + evt.data,"red");
+          let recv_time = performance.now();
+          setTimeout(function() { channel.send(performance.now()); }, 1000);
+          log("Delta: " + (recv_time - evt.data));
         }
       };
       channel.onopen = function() {
         log("*** pc2 onopen fired, sending to " + channel);
-        channel.send("pc2 says Hi there!");
       };
       channel.onclose = function() {
         log("*** pc2 onclose fired");
@@ -233,14 +236,12 @@ function start() {
         if (evt.data instanceof Blob) {
           fancy_log("*** pc2 sent Blob: " + evt.data + ", length=" + evt.data.size,"blue");
         } else {
-          fancy_log('pc2 said: ' + evt.data,"blue");
+          log("received: " + evt.data);
         }
       }
 
       channel.onopen = function() {
         log("pc1 onopen fired for " + channel);
-        channel.send("pc1 says Hello out there...");
-        log("pc1 state: " + channel.state);
       }
       channel.onclose = function() {
         log("pc1 onclose fired");
@@ -248,29 +249,6 @@ function start() {
     }
     pc1.onconnection = function() {
       log("pc1 onConnection ");
-      dict = preset.checked ? {protocol:"text/chat", negotiated:true,
-                               id:stream_num.value } : {}; // reliable (TCP-like)
-      dc2 = pc2.createDataChannel("This is pc2", dict);
-      channel = dc2;
-      log("pc2 ordered=" + pc2.ordered);
-      channel.binaryType = "blob";
-      log("pc2 label " + channel.label +
-          ", stream=" + channel.stream + " id=" + channel.id);
-
-      channel.onmessage = function(evt) {
-        if (evt.data instanceof Blob) {
-          fancy_log("*** pc1 sent Blob: " + evt.data,"blue");
-        } else {
-          fancy_log('pc1 said: ' + evt.data,"blue");
-        }
-      }
-      channel.onopen = function() {
-        log("pc1 onopen fired for " + channel);
-       channel.send("pc2 says Hello...");
-      }
-      channel.onclose = function() {
-        log("pc2 onclose fired");
-      };
     }
     pc1.onclosedconnection = function() {
       log("pc1 onClosedConnection ");
@@ -289,12 +267,14 @@ function start() {
       if (evt.data instanceof Blob) {
         fancy_log("*** pc2 sent Blob: " + evt.data,"blue");
       } else {
-          fancy_log('pc2 said: ' + evt.data,"blue");
+        let recv_time = performance.now();
+        setTimeout(function() { channel.send(performance.now()); }, 1000);
+        log("Delta: " + (recv_time - evt.data));
       }
     }
     channel.onopen = function() {
       log("pc1 onopen fired for " + channel);
-       channel.send("pc1 says Hello...");
+      channel.send(performance.now());
     }
     channel.onclose = function() {
       log("pc1 onclose fired");

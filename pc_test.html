@@ -36,6 +36,8 @@
 <button id="tehbutton" onclick="start();">Start!</button>
 <input type="checkbox" id="fake" value="Use Fake Video/Audio for one stream">
 <label for="fake">Use Fake Audio/Video for one stream</label>
+<input type="checkbox" id="audio_only" value="Audio-only call">
+<label for="audio_only">Audio-only call</label>
 <input type="checkbox" id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);">
 <label for="disable_video">Disable video</label>
 <input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
@@ -67,6 +69,8 @@
   let localvideo2 = document.getElementById("localvideo2");
   let fake = document.getElementById("fake");
   fake.checked = true;
+  let audio_only = document.getElementById("audio_only");
+  audio_only.checked = false;
   let video_disable = document.getElementById("disable_video");
   let audio_disable = document.getElementById("disable_audio");
 
@@ -155,13 +159,19 @@
       setTimeout(pc2video.play, 1000);
     }
 
-    var myrequest;
-    if (fake.checked) {
-      myrequest = {video: true, audio: true, fake: true};
-    } else {
-      myrequest = {video: true, audio:true};
+    var myrequest = { audio: true };
+    if (!(audio_only.checked)) {
+      myrequest = { audio: true, video: true };
     }
-    navigator.mozGetUserMedia({video:true, audio:true}, function(video1) {
+
+    if (!(audio_only.checked)) {
+      if (fake.checked) {
+        myrequest_reverse = { audio: true, video: true, fake: true };
+      } else {
+        myrequest_reverse = { audio: true, video: true };
+      }
+    }
+    navigator.mozGetUserMedia(myrequest, function(video1) {
       // Add stream obtained from gUM to <video> to start media flow.
       localvideo1.mozSrcObject = video1;
       if (video_disable.checked)
@@ -171,7 +181,7 @@
       localvideo1.play();
       pc1.addStream(video1);
 
-      navigator.mozGetUserMedia(myrequest, function(video2) {
+      navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
         localvideo2.mozSrcObject = video2;
         localvideo2.play();
         pc2.addStream(video2);
