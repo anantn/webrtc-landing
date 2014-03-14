@@ -5,34 +5,19 @@
 <body>
 
 <table width=100% height=100%>
-<tr><td><h1>Simple WebRTC Data Channel Test</h1></td></tr>
-<tr><td>(Note: this JS code is REALLY UGLY)<b>
-     The API and wireline protocol changed on Nightly 2013/4/2 (and will in the
-     first Aurora 22). An additonal backwards-incompatible bugfix landed
-     4/9.  Summary of changes is
-     <a href="DataChannel_changes.html">here</a>.  You will not be able to
-     connect DataConnections across the change!
-</td></tr>
+<tr><td><h1>WebRTC DataChannel ping latency test</h1></td></tr>
 <tr><td><div>
      <button id="thebutton" onClick="start();">Start!</button>
-     <input type="checkbox" id="preset" value="Use pre-negotiated channel 5">
-     <label for="preset">Use pre-negotiated channel</label>
-     <input type="number" id="stream_num" value="5">
-     <input type="checkbox" id="unordered" value="Use unordered data transfer">
-     <label for="unordered">Use unordered data transfer</label>
-</div><br/></td></tr>
-<tr><td><form id="pc1_form" action="javascript:sendit(1)">
-<div>pc1 says: <input id="pc1_input" type="text" value="type here" onKeyPress="return submitenter(this,event)"/>
-<input type="submit"/></div></form></td></tr>
-<tr><td><form id="pc1_blob" action="javascript:sendblob(1)">
-<div>pc1 sends a blob: <input id="pc1_browse" type="file"/>
-<input type="submit"/></div></form></td></tr>
-<tr><td><form id="pc2_form" action="javascript:sendit(2)">
-<div>pc2 says: <input id="pc2_input" type="text" value="type here" onKeyPress="return submitenter(this,event)"/>
-<input type="submit"/></div></form></td></tr>
-<tr><td><form id="pc2_blob" action="javascript:sendblob(2)">
-<div>pc2 sends a blob: <input id="pc2_browse" type="file"/>
-<input type="submit"/></div></form></td></tr>
+     <input type="number" id="ping_pace" value="1000">
+     <label for="ping_pace">Time between pings in ms</label>
+</div></td></tr>
+<tr><td>
+     Ping:<br>
+     avg= <div id="ping_results"></div>
+     last=<div id="ping_last"></div>
+     min= <div id="ping_min"></div>
+     max= <div id="ping_max"></div>
+</td></tr>
 <tr><td><div id="datawindow" style="
   width: 100%;
   height: 500px;
@@ -41,16 +26,7 @@
 
 <script type="application/javascript;version=1.8">
   let button = document.getElementById("thebutton");
-  let text_pc1 = document.getElementById("pc1_input");
-  let text_pc2 = document.getElementById("pc2_input");
-  let blob_pc1 = document.getElementById("pc1_browse");
-  let blob_pc2 = document.getElementById("pc2_browse");
-  let datawindow = document.getElementById("datawindow");
-  let preset = document.getElementById("preset");
-  preset.checked = false;
-  let unordered = document.getElementById("unordered");
-  unordered.checked = false;
-  let stream_num = document.getElementById("stream_num");
+  let ping_pace = document.getElementById("ping_pace");
 
   let pc1;
   let pc2;
@@ -64,10 +40,11 @@
 
   let pc1_offer;
   let pc2_answer;
-  let iter = 0;
-  let iter2 = 0;
 
-  let fake_audio;
+  let min_ping = 100000;
+  let max_ping = 0
+  let total_pings = 0;
+  let num_pings = 0;
 
   function log(msg) {
     let div = document.getElementById("datawindow");
@@ -98,33 +75,26 @@
     }
   }
 
-  var sendit = function (which) {
-    iter = iter + 1;
-    //log("Sending message #" + iter + " this = " + this);
-    if (which == 1) {
-      dc1.send(text_pc1.value);
-      text_pc1.value = "";
-    } else if (which == 2) {
-      dc2.send(text_pc2.value);
-      text_pc2.value = "";
-    } else {
-      log("Unknown send " + which);
+  function update_ping(ping) {
+    last_ping = ping;
+    if (ping < min_ping) {
+      min_ping = ping;
     }
-  };
-
-  var sendblob = function (which) {
-    iter = iter + 1;
-    //log("Sending blob #" + iter + " this = " + this);
-    if (which == 1) {
-      dc1.send(blob_pc1.files[0]);
-      blob_pc1.value = "";
-    } else if (which == 2) {
-      dc2.send(blob_pc2.files[0]);
-      blob_pc2.value = "";
-    } else {
-      log("Unknown sendblob " + which);
+    if (ping > max_ping) {
+      max_ping = ping;
     }
-  };
+    num_pings++;
+    total_pings += ping;
+  }
+  function display_pings() {
+    if (num_pings > 0) {
+      document.getElementById("ping_results").innerHTML = total_pings/num_pings;
+      document.getElementById("ping_last").innerHTML = last_ping;
+      document.getElementById("ping_min").innerHTML = min_ping;
+      document.getElementById("ping_max").innerHTML = max_ping;
+    }
+    setTimeout(display_pings, 1000);
+  }
 
   function failed(code) {
     log("Failure callback: " + code);
@@ -157,15 +127,10 @@
       channel.binaryType = "blob";
 
       channel.onmessage = function(evt) {
-        iter2 = iter2 + 1;
-        if (evt.data instanceof Blob) {
-          fancy_log("*** pc1 sent Blob: " + evt.data + ", length=" + evt.data.size,"red");
-        } else {
-          let recv_time = performance.now();
-          setTimeout(function() { channel.send(performance.now()); }, 1000);
-          log("Delta: " + (recv_time - evt.data));
-        }
-      };
+        let recv_time = performance.now();
+        setTimeout(function() { channel.send(performance.now()); }, ping_pace.value);
+        update_ping(recv_time - evt.data);
+       };
       channel.onopen = function() {
         log("*** pc2 onopen fired, sending to " + channel);
       };
@@ -209,6 +174,11 @@
   }
 
 function start() {
+    num_pings = 0;
+    total_pings = 0;
+    min_ping = 100000;
+    max_ping = 0;
+
     button.innerHTML = "Stop!";
     button.onclick = stop;
     while (datawindow.firstChild) {
@@ -233,12 +203,8 @@ function start() {
       num_channels++;
 
       channel.onmessage = function(evt) {
-        if (evt.data instanceof Blob) {
-          fancy_log("*** pc2 sent Blob: " + evt.data + ", length=" + evt.data.size,"blue");
-        } else {
-          log("received: " + evt.data);
-        }
-      }
+        log("received: " + evt.data);
+       }
 
       channel.onopen = function() {
         log("pc1 onopen fired for " + channel);
@@ -254,23 +220,16 @@ function start() {
       log("pc1 onClosedConnection ");
     }
 
-    dict = preset.checked ? {protocol: "text/plain", negotiated:true,
-                             id:stream_num.value} : {}; // reliable (TCP-like)
+    dict = {}; // reliable (TCP-like)
     dc1 = pc1.createDataChannel("This is pc1", dict);
     channel = dc1;
-    log("pc1 ordered=" + channel.ordered);
-    channel.binaryType = "blob";
     log("pc1 label " + channel.label +
         ", stream=" + channel.stream + " id=" + channel.id);
 
     channel.onmessage = function(evt) {
-      if (evt.data instanceof Blob) {
-        fancy_log("*** pc2 sent Blob: " + evt.data,"blue");
-      } else {
-        let recv_time = performance.now();
-        setTimeout(function() { channel.send(performance.now()); }, 1000);
-        log("Delta: " + (recv_time - evt.data));
-      }
+      let recv_time = performance.now();
+      setTimeout(function() { channel.send(performance.now()); }, ping_pace.value);
+      update_ping(recv_time - evt.data);
     }
     channel.onopen = function() {
       log("pc1 onopen fired for " + channel);
@@ -281,6 +240,7 @@ function start() {
     };
 
     pc1.createOffer(step1, failed);
+    setTimeout(display_pings, 1000);
   }
 
   function stop() {
