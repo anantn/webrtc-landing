@@ -208,6 +208,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
           stopbuttons.appendChild(snapshot);
         } else if (audio_status) {
           content.appendChild(audio);
+          audio.muted = true;
           audio.mozSrcObject = stream;
           audio.play();
         } else if (picture_status) {
