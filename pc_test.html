@@ -36,6 +36,8 @@
 <button id="tehbutton" onclick="start();">Start!</button>
 <input type="checkbox" id="fake" value="Use Fake Video/Audio for one stream">
 <label for="fake">Use Fake Audio/Video for one stream</label>
+<input type="checkbox" id="oneway" value="one-way call">
+<label for="oneway">One-way call</label>
 <input type="checkbox" id="audio_only" value="Audio-only call">
 <label for="audio_only">Audio-only call</label>
 <input type="checkbox" id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);">
@@ -69,6 +71,8 @@
   let localvideo2 = document.getElementById("localvideo2");
   let fake = document.getElementById("fake");
   fake.checked = true;
+  let oneway = document.getElementById("oneway");
+  oneway.checked = false;
   let audio_only = document.getElementById("audio_only");
   audio_only.checked = false;
   let video_disable = document.getElementById("disable_video");
@@ -79,6 +83,9 @@
 
   let pc1_offer;
   let pc2_answer;
+
+  let offer_constraints;
+  let answer_constraints;
 
   function disable_media(pc, type, array_index) {
     log("disable_media");
@@ -120,11 +127,12 @@
 
   // pc2.setRemote finished, call pc2.createAnswer
   function step3() {
-    pc2.createAnswer(step4, failed);
+    pc2.createAnswer(step4, failed,  answer_constraints);
   }
 
   // pc2.createAnswer finished, call pc2.setLocal
   function step4(answer) {
+    log("Answer:  " + answer.sdp);
     pc2_answer = answer;
     pc2.setLocalDescription(answer, step5, failed);
   }
@@ -171,6 +179,13 @@
         myrequest_reverse = { audio: true, video: true };
       }
     }
+    if (oneway.checked) {
+       offer_constraints = { mandatory: { OfferToReceiveVideo : false,
+                                           OfferToReceiveAudio: false } };
+       answer_constraints = { mandatory: { OfferToReceiveVideo : true,
+                                            OfferToReceiveAudio: true } };
+    }
+
     navigator.mozGetUserMedia(myrequest, function(video1) {
       // Add stream obtained from gUM to <video> to start media flow.
       localvideo1.mozSrcObject = video1;
@@ -181,13 +196,17 @@
       localvideo1.play();
       pc1.addStream(video1);
 
-      navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
-        localvideo2.mozSrcObject = video2;
-        localvideo2.play();
-        pc2.addStream(video2);
-        // Start the signaling.
-        pc1.createOffer(step1, failed);
-      }, failed);
+      if (!oneway.checked) {
+        navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
+          localvideo2.mozSrcObject = video2;
+          localvideo2.play();
+          pc2.addStream(video2);
+          // Start the signaling.
+          pc1.createOffer(step1, failed, offer_constraints );
+        }, failed);
+      } else {
+        pc1.createOffer(step1, failed, offer_constraints );
+      }
     }, failed);
   }
 
