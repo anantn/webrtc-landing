@@ -1,0 +1,242 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>Simple mozRTCPeerConnection Video Test</title>
+  <style>
+    #player1 {
+      position:relative;
+      width:640px;
+      height:480px;
+      float:right;
+    }
+    #player2 {
+      position:relative;
+      width:640px;
+      height:480px;
+      float:left;
+    }
+    #mainvideo {
+      position:absolute;
+      top:0;
+      left:0;
+      z-index:0;
+    }
+    #localvideo1, #localvideo2 {
+      position:absolute;
+      top:0;
+      left:0;
+      z-index:1;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Simple mozRTCPeerConnection Video Test</h1>
+
+<div>
+<button id="tehbutton" onclick="start();">Start!</button>
+<input checked="checked" id="fake" value="Use Fake Video/Audio for one stream" type="checkbox">
+<label for="fake">Use Fake Audio/Video for one stream</label>
+<input id="oneway" value="one-way call" type="checkbox">
+<label for="oneway">One-way call</label>
+<input id="audio_only" value="Audio-only call" type="checkbox">
+<label for="audio_only">Audio-only call</label>
+<input id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);" type="checkbox">
+<label for="disable_video">Disable video</label>
+<input id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);" type="checkbox">
+<label for="disable_audio">Disable audio</label>
+</div><br>
+<div>
+<div id="player1">
+<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" muted="muted" height="480" width="640"></video>
+<video tabindex="0" id="localvideo1" controls="controls" muted="muted" height="120" width="160"></video></div>
+<div id="player2">
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" muted="muted" height="480" width="640"></video>
+<video tabindex="0" id="localvideo2" controls="controls" muted="muted" height="120" width="160"></video></div><br>
+<br style="clear: left;">
+</div>
+<div id="log"></div>
+
+
+<script type="application/javascript;version=1.8">
+  function log(msg) {
+    let div = document.getElementById("log");
+    div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
+  }
+
+  let pc1video = document.getElementById("pc1video");
+  let pc2video = document.getElementById("pc2video");
+
+  let button = document.getElementById("tehbutton");
+  let localvideo1 = document.getElementById("localvideo1");
+  let localvideo2 = document.getElementById("localvideo2");
+  let fake = document.getElementById("fake");
+  fake.checked = true;
+  let oneway = document.getElementById("oneway");
+  oneway.checked = false;
+  let audio_only = document.getElementById("audio_only");
+  audio_only.checked = false;
+  let video_disable = document.getElementById("disable_video");
+  let audio_disable = document.getElementById("disable_audio");
+
+  let pc1;
+  let pc2;
+
+  let pc1_offer;
+  let pc2_answer;
+
+  let offer_constraints;
+  let answer_constraints;
+
+  function disable_media(pc, type, array_index) {
+    log("disable_media");
+    var stream;
+    if (pc == pc1)
+      stream = localvideo1.mozSrcObject;
+    else if (pc == pc2)
+      stream = localvideo2.mozSrcObject;
+    else log("bad pc " + pc);
+
+    if (stream) {
+      log("track[" + array_index + "] = " + stream.getVideoTracks()[array_index]);
+      if (type == 1)
+        stream.getVideoTracks()[array_index].enabled = !video_disable.checked;
+      else if (type == 0)
+        stream.getAudioTracks()[array_index].enabled = !audio_disable.checked;
+      else
+	 log("bad type");
+     }
+     else
+	 log("no stream");
+  }
+
+  function failed(code) {
+    log("Failure callback: " + code);
+  }
+
+  // pc1.createOffer finished, call pc1.setLocal
+  function step1(offer) {
+    log("Offer:  " + offer.sdp);
+    pc1_offer = offer;
+
+    // Remove VP8 from offer if H.264 exists
+    if (offer.sdp.search("H264/90000") != -1) {
+      offer.sdp = removeVP8(offer.sdp); 
+      pc1_offer = offer;
+      log("No VP8 Offer: " + offer.sdp);
+    }
+
+    pc1.setLocalDescription(offer, step2, failed);
+  }
+
+  function removeVP8(sdp) {
+    updated_sdp = sdp.replace("a=rtpmap:120 VP8/90000",""); 
+    updated_sdp = updated_sdp.replace("RTP/SAVPF 120 126 97","RTP/SAVPF 126 97"); 
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack",""); 
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli",""); 
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir",""); 
+    return updated_sdp;
+  }
+
+  // pc1.setLocal finished, call pc2.setRemote
+  function step2() {
+    pc2.setRemoteDescription(pc1_offer, step3, failed);
+  };
+
+  // pc2.setRemote finished, call pc2.createAnswer
+  function step3() {
+    pc2.createAnswer(step4, failed,  answer_constraints);
+  }
+
+  // pc2.createAnswer finished, call pc2.setLocal
+  function step4(answer) {
+    log("Answer:  " + answer.sdp);
+    pc2_answer = answer;
+    pc2.setLocalDescription(answer, step5, failed);
+  }
+
+  // pc2.setLocal finished, call pc1.setRemote
+  function step5() {
+    pc1.setRemoteDescription(pc2_answer, step6, failed);
+  }
+
+  // pc1.setRemote finished, media should be running!
+  function step6() {
+    log("HIP HIP HOORAY");
+  }
+
+  function start() {
+    button.innerHTML = "Stop!";
+    button.onclick = stop;
+
+    pc1 = new mozRTCPeerConnection();
+    pc2 = new mozRTCPeerConnection();
+
+    pc1.onaddstream = function(obj) {
+      log("pc1 got remote stream from pc2 " + obj.type);
+      pc1video.mozSrcObject = obj.stream;
+      pc1video.play();
+      setTimeout(pc1video.play, 1000);
+    }
+    pc2.onaddstream = function(obj) {
+      log("pc2 got remote stream from pc1 " + obj.type);
+      pc2video.mozSrcObject = obj.stream;
+      pc2video.play();
+      setTimeout(pc2video.play, 1000);
+    }
+
+    var myrequest = { audio: true };
+    if (!(audio_only.checked)) {
+      myrequest = { audio: true, video: true };
+    }
+
+    if (!(audio_only.checked)) {
+      if (fake.checked) {
+        myrequest_reverse = { audio: true, video: true, fake: true };
+      } else {
+        myrequest_reverse = { audio: true, video: true };
+      }
+    }
+    if (oneway.checked) {
+       offer_constraints = { mandatory: { OfferToReceiveVideo : false,
+                                           OfferToReceiveAudio: false } };
+       answer_constraints = { mandatory: { OfferToReceiveVideo : true,
+                                            OfferToReceiveAudio: true } };
+    }
+
+    navigator.mozGetUserMedia(myrequest, function(video1) {
+      // Add stream obtained from gUM to <video> to start media flow.
+      localvideo1.mozSrcObject = video1;
+      if (video_disable.checked)
+	  localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
+      if (audio_disable.checked)
+	  localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
+      localvideo1.play();
+      pc1.addStream(video1);
+
+      if (!oneway.checked) {
+        navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
+          localvideo2.mozSrcObject = video2;
+          localvideo2.play();
+          pc2.addStream(video2);
+          // Start the signaling.
+          pc1.createOffer(step1, failed, offer_constraints );
+        }, failed);
+      } else {
+        pc1.createOffer(step1, failed, offer_constraints );
+      }
+    }, failed);
+  }
+
+  function stop() {
+    pc1.close();
+    pc2.close();
+
+    button.innerHTML = "Start!";
+    button.onclick = start;
+  }
+</script>
+
+
+
+
+</body></html>
