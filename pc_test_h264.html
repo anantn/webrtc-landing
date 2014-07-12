@@ -128,17 +128,22 @@
     pc1.setLocalDescription(offer, step2, failed);
   }
 
+  // Also remove mode 0 if it's offered
+  // Note, we don't bother removing the fmtp lines, which makes a good test
+  // for some SDP parsing issues.
   function removeVP8(sdp) {
     updated_sdp = sdp.replace("a=rtpmap:120 VP8/90000\r\n",""); 
     updated_sdp = updated_sdp.replace("RTP/SAVPF 120 126 97\r\n","RTP/SAVPF 126 97\r\n"); 
+    updated_sdp = updated_sdp.replace("RTP/SAVPF 120 126\r\n","RTP/SAVPF 126\r\n"); 
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n",""); 
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n",""); 
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir\r\n","");
-    // Disable NACK to test IDR recovery
+/*    // Disable NACK to test IDR recovery
     updated_sdp = updated_sdp.replace("a=rtcp-fb:126 nack\r\n",""); 
     updated_sdp = updated_sdp.replace("a=rtcp-fb:126 nack pli\r\n","a=rtcp-fb:126 pli\r\n"); 
     updated_sdp = updated_sdp.replace("a=rtcp-fb:97 nack\r\n",""); 
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:97 nack pli\r\n","a=rtcp-fb:97 pli\r\n"); 
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:97 nack pli\r\n","a=rtcp-fb:97 pli\r\n");
+*/
     return updated_sdp;
   }
 
