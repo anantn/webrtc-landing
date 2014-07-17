@@ -118,12 +118,10 @@
     log("Offer:  " + offer.sdp);
     pc1_offer = offer;
 
-    // Remove VP8 from offer if H.264 exists
-    if (offer.sdp.search("H264/90000") != -1) {
-      offer.sdp = removeVP8(offer.sdp); 
-      pc1_offer = offer;
-      log("No VP8 Offer: " + offer.sdp);
-    }
+    // Remove VP8 from offer every time
+    offer.sdp = removeVP8(offer.sdp); 
+    pc1_offer = offer;
+    log("No VP8 Offer: " + offer.sdp);
 
     pc1.setLocalDescription(offer, step2, failed);
   }
@@ -132,11 +130,11 @@
   // Note, we don't bother removing the fmtp lines, which makes a good test
   // for some SDP parsing issues.
   function removeVP8(sdp) {
-    updated_sdp = sdp.replace("a=rtpmap:120 VP8/90000\r\n",""); 
-    updated_sdp = updated_sdp.replace("RTP/SAVPF 120 126 97\r\n","RTP/SAVPF 126 97\r\n"); 
-    updated_sdp = updated_sdp.replace("RTP/SAVPF 120 126\r\n","RTP/SAVPF 126\r\n"); 
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n",""); 
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n",""); 
+    updated_sdp = sdp.replace("a=rtpmap:120 VP8/90000\r\n","");
+    updated_sdp = updated_sdp.replace(/m=video ([0-9]+) RTP\/SAVPF ([0-9 ]*) 120/g, "m=video $1 RTP\/SAVPF $2");
+    updated_sdp = updated_sdp.replace(/m=video ([0-9]+) RTP\/SAVPF 120([0-9 ]*)/g, "m=video $1 RTP\/SAVPF$2");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n","");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n","");
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir\r\n","");
 /*    // Disable NACK to test IDR recovery
     updated_sdp = updated_sdp.replace("a=rtcp-fb:126 nack\r\n",""); 
