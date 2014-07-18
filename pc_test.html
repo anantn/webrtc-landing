@@ -123,7 +123,7 @@
     pc1_offer = offer;
 
     if (requireh264.checked) {
-      // Remove VP8 from offer every time
+      // to enforce the usage of H264 we remove the VP8 codec from the offer
       offer.sdp = removeVP8(offer.sdp);
       pc1_offer = offer;
       log("No VP8 Offer: " + offer.sdp);
@@ -148,12 +148,6 @@
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n","");
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n","");
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir\r\n","");
-/*    // Disable NACK to test IDR recovery
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:126 nack\r\n","");
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:126 nack pli\r\n","a=rtcp-fb:126 pli\r\n");
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:97 nack\r\n","");
-    updated_sdp = updated_sdp.replace("a=rtcp-fb:97 nack pli\r\n","a=rtcp-fb:97 pli\r\n");
-*/
     return updated_sdp;
   }
 
