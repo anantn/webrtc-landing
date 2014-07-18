@@ -44,6 +44,8 @@
 <label for="disable_video">Disable video</label>
 <input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
 <label for="disable_audio">Disable audio</label>
+<input type="checkbox" id="requireh264" value="Require H.264">
+<label for="fake">Require H.264 video</label>
 </div><br>
 <div>
 <div id="player1">
@@ -77,6 +79,8 @@
   audio_only.checked = false;
   let video_disable = document.getElementById("disable_video");
   let audio_disable = document.getElementById("disable_audio");
+  let requireh264 = document.getElementById("requireh264");
+  requireh264.checked = false;
 
   let pc1;
   let pc2;
@@ -117,7 +121,34 @@
   function step1(offer) {
     log("Offer:  " + offer.sdp);
     pc1_offer = offer;
-    pc1.setLocalDescription(offer, step2, failed);
+
+    if (requireh264.checked) {
+      // to enforce the usage of H264 we remove the VP8 codec from the offer
+      offer.sdp = removeVP8(offer.sdp);
+      pc1_offer = offer;
+      log("No VP8 Offer: " + offer.sdp);
+
+      if (offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
+        pc1.setLocalDescription(offer, step2, failed);
+      } else {
+        log("No H264 found in the offer!!!");
+      }
+    } else {
+      pc1.setLocalDescription(offer, step2, failed);
+    }
+  }
+
+  // Also remove mode 0 if it's offered
+  // Note, we don't bother removing the fmtp lines, which makes a good test
+  // for some SDP parsing issues.
+  function removeVP8(sdp) {
+    updated_sdp = sdp.replace("a=rtpmap:120 VP8/90000\r\n","");
+    updated_sdp = updated_sdp.replace(/m=video ([0-9]+) RTP\/SAVPF ([0-9 ]*) 120/g, "m=video $1 RTP\/SAVPF $2");
+    updated_sdp = updated_sdp.replace(/m=video ([0-9]+) RTP\/SAVPF 120([0-9 ]*)/g, "m=video $1 RTP\/SAVPF$2");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n","");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n","");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir\r\n","");
+    return updated_sdp;
   }
 
   // pc1.setLocal finished, call pc2.setRemote
@@ -134,7 +165,16 @@
   function step4(answer) {
     log("Answer:  " + answer.sdp);
     pc2_answer = answer;
-    pc2.setLocalDescription(answer, step5, failed);
+
+    if (requireh264.checked) {
+      if (answer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
+        pc2.setLocalDescription(answer, step5, failed);
+      } else {
+        log("No H264 found in the answer!!!");
+      }
+    } else {
+      pc2.setLocalDescription(answer, step5, failed);
+    }
   }
 
   // pc2.setLocal finished, call pc1.setRemote

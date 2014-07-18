@@ -44,6 +44,8 @@
 <label for="disable_video">Disable video</label>
 <input id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);" type="checkbox">
 <label for="disable_audio">Disable audio</label>
+<input checked="checked" id="requireh264" value="Require H.264" type="checkbox">
+<label for="fake">Require H.264 video</label>
 </div><br>
 <div>
 <div id="player1">
@@ -77,6 +79,8 @@
   audio_only.checked = false;
   let video_disable = document.getElementById("disable_video");
   let audio_disable = document.getElementById("disable_audio");
+  let requireh264 = document.getElementById("requireh264");
+  requireh264.checked = true;
 
   let pc1;
   let pc2;
@@ -123,7 +127,15 @@
     pc1_offer = offer;
     log("No VP8 Offer: " + offer.sdp);
 
-    pc1.setLocalDescription(offer, step2, failed);
+    if (requireh264.checked) {
+      if (offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
+        pc1.setLocalDescription(offer, step2, failed);
+      } else {
+        log("No H264 found in the offer!!!");
+      }
+    } else {
+      pc1.setLocalDescription(offer, step2, failed);
+    }
   }
 
   // Also remove mode 0 if it's offered
@@ -159,7 +171,16 @@
   function step4(answer) {
     log("Answer:  " + answer.sdp);
     pc2_answer = answer;
-    pc2.setLocalDescription(answer, step5, failed);
+
+    if (requireh264.checked) {
+      if (answer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
+        pc2.setLocalDescription(answer, step5, failed);
+      } else {
+        log("No H264 found in the answer!!!");
+      }
+    } else {
+      pc2.setLocalDescription(answer, step5, failed);
+    }
   }
 
   // pc2.setLocal finished, call pc1.setRemote
