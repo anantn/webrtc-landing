@@ -33,11 +33,13 @@
   navigator.mozGetUserMedia({video:true, fake:true},
     function(stream) {
       pc1.addStream(stream);
-      pc1.createOffer(function(offer) {
+      setTimeout(function() {
+        pc1.createOffer(function(offer) {
           log("Created offer: " + offer.sdp);
         },
         failed
         );
+      }, 5000);
     },
     failed);
 
