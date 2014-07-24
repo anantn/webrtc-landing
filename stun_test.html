@@ -16,11 +16,9 @@
   }
 
   let pc1;
-  let pc2_answer;
-  let offer_constraints;
 
   function failed(code) {
-    log("Failure callback: " + code);
+    log("Failure callback: " + JSON.stringify(code));
   }
 
   var configuration = { "iceServers": [{ "url": "stun:stun.l.google.com:19302" }]};
@@ -35,7 +33,7 @@
       pc1.addStream(stream);
       setTimeout(function() {
         pc1.createOffer(function(offer) {
-          log("Created offer: " + offer.sdp);
+          log("Created offer: " + offer.sdp.replace(/[\n]/g, '<br>'));
         },
         failed
         );
