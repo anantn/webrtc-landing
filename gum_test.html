@@ -54,6 +54,8 @@ Note: Audio will feedback unless you use a headset!<br><br>
       <input value="Audio" onclick="startAudio();" type="button">
       <input value="Audio &amp; Video" onclick="startAudioVideo();" type="button">
       <input value="Picture" onclick="startPicture();" type="button">
+      <input value="Screen" onclick="startScreen();" type="button">
+      <input value="Window" onclick="startWindow();" type="button">
     </div>
     <div id="images">
        <div id="content"></div>
@@ -98,6 +100,39 @@ Note: Audio will feedback unless you use a headset!<br><br>
     startMedia({video:true});
   }
 
+  function startScreen() {
+    video_status = true;
+    mediaConstraints = {
+      video: {
+        mozMediaSource: "screen",
+        mediaSource: "screen"
+      }
+    };
+    startMedia(mediaConstraints);
+  }
+  
+  function startWindow() {
+    video_status = true;
+    mediaConstraints = {
+      video: {
+        mozMediaSource: "window",
+        mediaSource: "window"
+      }
+    };
+    startMedia(mediaConstraints);
+  }
+  
+  function startApplication() {
+    video_status = true;
+    mediaConstraints = {
+      video: {
+        mozMediaSource: "application",
+        mediaSource: "application"
+      }
+    };
+    startMedia(mediaConstraints);
+  }
+  
   function startAudioVideo() {
     video_status = true;
     audio_status = true;
