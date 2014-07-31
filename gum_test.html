@@ -200,6 +200,18 @@ Note: Audio will feedback unless you use a headset!<br><br>
     }
   }
 
+  function getusermedia_error(err, params) {
+    if (params.video.mediaSource) {
+      message.innerHTML = "<p class='error'>" + err + "</p>" +
+        "<p>In <a href=\"about:config\">about:config</a>, please enable media.getusermedia.screensharing.enabled<br> and add this" +
+        " site's domain name to " +
+        "media.getusermedia.screensharing.allowed_domains in about:config</p>";
+    } else {
+        message.innerHTML = "<p class='error'>" + err + "</p>";
+    }
+    stopMedia();
+  }
+
   function startMedia(param) {
     stop.style.display = "block";
     start.style.display = "none";
@@ -223,13 +235,9 @@ Note: Audio will feedback unless you use a headset!<br><br>
             window.URL.revokeObjectURL(this.src);
           }
         }
-      }, function(err) {
-        message.innerHTML = "<p class='error'>" + err + "</p>";
-        stopMedia();
-      });
+      }, function (err) { getusermedia_error(err, param); });
     } catch(e) {
-      message.innerHTML = "<p class='error'>" + e + "</p>";
-      stopMedia();
+      getusermedia_error(e, param);
     }
   }
 
