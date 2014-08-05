@@ -60,6 +60,11 @@
 
 
 <script type="application/javascript;version=1.8">
+  // Lame clone function. Not efficient but we don't have jQuery.
+  function copy_dictionary (obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
   function log(msg) {
     let div = document.getElementById("log");
     div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
@@ -212,13 +217,11 @@
       myrequest = { audio: true, video: true };
     }
 
-    if (!(audio_only.checked)) {
-      if (fake.checked) {
-        myrequest_reverse = { audio: true, video: true, fake: true };
-      } else {
-        myrequest_reverse = { audio: true, video: true };
-      }
+    myrequest_reverse = copy_dictionary(myrequest);
+    if (fake.checked) {
+      myrequest_reverse.fake = true;
     }
+
     if (oneway.checked) {
        offer_constraints = { mandatory: { OfferToReceiveVideo : false,
                                            OfferToReceiveAudio: false } };
