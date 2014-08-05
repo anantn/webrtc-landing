@@ -128,14 +128,14 @@
 
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
-    log("Offer:  " + offer.sdp);
+    log("Offer:  " + sdpPrettyPrint(offer.sdp));
     pc1_offer = offer;
 
     if (requireh264.checked) {
       // to enforce the usage of H264 we remove the VP8 codec from the offer
       offer.sdp = removeVP8(offer.sdp);
       pc1_offer = offer;
-      log("No VP8 Offer: " + offer.sdp);
+      log("No VP8 Offer: " + sdpPrettyPrint(offer.sdp));
 
       if (!offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
         log("No H264 found in the offer!!!");
@@ -147,7 +147,7 @@
       // to enforce the usage of G.722 we remove other codecs from the offer
       offer.sdp = removeNonG722(offer.sdp);
       pc1_offer = offer;
-      log("G.722 only Offer: " + offer.sdp);
+      log("G.722 only Offer: " + sdpPrettyPrint(offer.sdp));
 
       if (!offer.sdp.match(/a=rtpmap:[0-9]+ G722/g)) {
         log("No G722 found in the offer!!!");
@@ -156,6 +156,11 @@
     }
 
     pc1.setLocalDescription(offer, step2, failed);
+  }
+
+  // replace CR NL with HTML breaks
+  function sdpPrettyPrint(sdp) {
+    return sdp.replace(/[\r]/g, '').replace(/[\n]/g, '<br>');
   }
 
   // Also remove mode 0 if it's offered
@@ -190,7 +195,7 @@
 
   // pc2.createAnswer finished, call pc2.setLocal
   function step4(answer) {
-    log("Answer:  " + answer.sdp);
+    log("Answer:  " + sdpPrettyPrint(answer.sdp));
     pc2_answer = answer;
 
     if (requireg722.checked) {
