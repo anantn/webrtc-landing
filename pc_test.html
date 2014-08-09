@@ -142,7 +142,6 @@
         return;
       }
     }
-
     if (requireg722.checked) {
       // to enforce the usage of G.722 we remove other codecs from the offer
       offer.sdp = removeNonG722(offer.sdp);
@@ -154,7 +153,6 @@
         return;
       }
     }
-
     pc1.setLocalDescription(offer, step2, failed);
   }
 
@@ -176,7 +174,7 @@
     return updated_sdp;
   }
 
-  // Remove anything that's not G.722 from the m=video line
+  // Remove anything that's not G.722 from the m=audio line
   function removeNonG722(sdp) {
     updated_sdp = sdp.replace(/m=audio ([0-9]+) RTP\/SAVPF ([0-9 ]*)/g, "m=audio $1 RTP\/SAVPF 9");
 
@@ -198,15 +196,15 @@
     log("Answer:  " + sdpPrettyPrint(answer.sdp));
     pc2_answer = answer;
 
-    if (requireg722.checked) {
-      if (answer.sdp.match(/a=rtpmap:[0-9]+ G722/g)) {
-        pc2.setLocalDescription(answer, step5, failed);
-      } else {
-        log("No G722 found in the answer!!!");
-      }
-    } else {
-      pc2.setLocalDescription(answer, step5, failed);
+    if ((requireh264.checked) && (!answer.sdp.match(/a=rtpmap:[0-9]+ H264/g))) {
+      log("No H264 found in the answer!!!");
+      return;
     }
+    if ((requireg722.checked) && (!answer.sdp.match(/a=rtpmap:[0-9]+ G722/g))) {
+      log("No G722 found in the answer!!!");
+      return;
+    }
+    pc2.setLocalDescription(answer, step5, failed);
   }
 
   // pc2.setLocal finished, call pc1.setRemote
