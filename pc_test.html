@@ -158,7 +158,7 @@
 
   // replace CR NL with HTML breaks
   function sdpPrettyPrint(sdp) {
-    return sdp.replace(/[\r]/g, '').replace(/[\n]/g, '<br>');
+    return sdp.replace(/[\r\n]+/g, '<br>');
   }
 
   // Also remove mode 0 if it's offered
