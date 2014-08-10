@@ -26,6 +26,11 @@
       left:0;
       z-index:1;
     }
+
+    .hidden 
+    {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -44,8 +49,13 @@
 <label for="disable_video">Disable video</label>
 <input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
 <label for="disable_audio">Disable audio</label>
-<input type="checkbox" id="requireh264" value="Require H.264">
-<label for="fake">Require H.264 video</label>
+<input type="checkbox" id="requireh264" value="Require H.264" onclick="h264StateChange(this);">
+<label for="requireh264">Require H.264 video</label>
+<div id="divH264" class="hidden">
+  <br>
+  <input type="checkbox" id="prefermode0" value="Prefer Mode 0">
+  <label for="prefermode0">Prefer Mode 0</label>
+</div>
 </div><br>
 <div>
 <div id="player1">
@@ -85,6 +95,8 @@
   let video_disable = document.getElementById("disable_video");
   let audio_disable = document.getElementById("disable_audio");
   let requireh264 = document.getElementById("requireh264");
+  requireh264.checked = false;
+  let prefermode0 = document.getElementById("prefermode0");
   requireh264.checked = false;
 
   let pc1;
@@ -130,6 +142,9 @@
     if (requireh264.checked) {
       // to enforce the usage of H264 we remove the VP8 codec from the offer
       offer.sdp = removeVP8(offer.sdp);
+      if (prefermode0.checked) {
+        offer.sdp = preferMode0(offer.sdp);
+      }
       pc1_offer = offer;
       log("No VP8 Offer: " + offer.sdp);
 
@@ -143,6 +158,16 @@
     }
   }
 
+  function h264StateChange(cb)
+  {
+    var h264opts = document.getElementById('divH264'); 
+    if(cb.checked){
+      h264opts.style.display = 'block'; 
+    } else {
+      h264opts.style.display = 'none';
+    }
+  }
+
   // Also remove mode 0 if it's offered
   // Note, we don't bother removing the fmtp lines, which makes a good test
   // for some SDP parsing issues.
@@ -153,6 +178,11 @@
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n","");
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n","");
     updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir\r\n","");
+    return updated_sdp;
+  }
+
+  function preferMode0(sdp) {
+    updated_sdp = updated_sdp.replace("126 97", "97 126");
     return updated_sdp;
   }
 
