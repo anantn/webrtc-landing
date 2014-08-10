@@ -26,6 +26,11 @@
       left:0;
       z-index:1;
     }
+
+    .hidden 
+    {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -44,10 +49,15 @@
 <label for="disable_video">Disable video</label>
 <input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
 <label for="disable_audio">Disable audio</label>
-<input type="checkbox" id="requireh264" value="Require H.264">
+<input type="checkbox" id="requireh264" value="Require H.264" onclick="h264StateChange(this);">
 <label for="requireh264">Require H.264 video</label>
 <input type="checkbox" id="requireg722" value="Require G.722">
-<label for="requireg722">Require G.722</label>
+<label for="requireg722">Require G.722 audio</label>
+<div id="divH264" class="hidden">
+  <br>
+  <input type="checkbox" id="prefermode0" value="Prefer Mode 0">
+  <label for="prefermode0">Prefer H.264 Mode 0</label>
+</div>
 </div><br>
 <div>
 <div id="player1">
@@ -87,8 +97,10 @@
   let video_disable = document.getElementById("disable_video");
   let audio_disable = document.getElementById("disable_audio");
   let requireh264 = document.getElementById("requireh264");
-  let requireg722 = document.getElementById("requireg722");
   requireh264.checked = false;
+  let prefermode0 = document.getElementById("prefermode0");
+  prefermode0.checked = false;
+  let requireg722 = document.getElementById("requireg722");
   requireg722.checked = false;
 
   let pc1;
@@ -116,10 +128,10 @@
       else if (type == 0)
         stream.getAudioTracks()[array_index].enabled = !audio_disable.checked;
       else
-	 log("bad type");
-     }
-     else
-	 log("no stream");
+        log("bad type");
+    }
+    else
+      log("no stream");
   }
 
   function failed(code) {
@@ -134,6 +146,9 @@
     if (requireh264.checked) {
       // to enforce the usage of H264 we remove the VP8 codec from the offer
       offer.sdp = removeVP8(offer.sdp);
+      if (prefermode0.checked) {
+        offer.sdp = preferMode0(offer.sdp);
+      }
       pc1_offer = offer;
       log("No VP8 Offer: " + sdpPrettyPrint(offer.sdp));
 
@@ -161,6 +176,16 @@
     return sdp.replace(/[\r\n]+/g, '<br>');
   }
 
+  function h264StateChange(cb)
+  {
+    var h264opts = document.getElementById('divH264'); 
+    if(cb.checked){
+      h264opts.style.display = 'block'; 
+    } else {
+      h264opts.style.display = 'none';
+    }
+  }
+
   // Also remove mode 0 if it's offered
   // Note, we don't bother removing the fmtp lines, which makes a good test
   // for some SDP parsing issues.
@@ -177,7 +202,11 @@
   // Remove anything that's not G.722 from the m=audio line
   function removeNonG722(sdp) {
     updated_sdp = sdp.replace(/m=audio ([0-9]+) RTP\/SAVPF ([0-9 ]*)/g, "m=audio $1 RTP\/SAVPF 9");
+    return updated_sdp;
+  }
 
+  function preferMode0(sdp) {
+    updated_sdp = updated_sdp.replace("126 97", "97 126");
     return updated_sdp;
   }
 
@@ -258,9 +287,9 @@
       // Add stream obtained from gUM to <video> to start media flow.
       localvideo1.mozSrcObject = video1;
       if (video_disable.checked)
-	  localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
+        localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
       if (audio_disable.checked)
-	  localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
+        localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
       localvideo1.play();
       pc1.addStream(video1);
 
