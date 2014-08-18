@@ -180,6 +180,16 @@
     pc2.onaddstream = function(obj) {
       log("pc2 got remote stream from pc1 " + obj.type);
     }
+
+    pc1.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc2.addIceCandidate(obj.candidate);
+      } else {
+        log("pc1 got end-of-candidates signal");
+      }
+    }
+
     pc2.setRemoteDescription(pc1_offer, step3, failed);
   };
 
@@ -197,6 +207,15 @@
 
   // pc2.setLocal finished, call pc1.setRemote
   function step5() {
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc1.addIceCandidate(obj.candidate);
+      } else {
+        log("pc2 got end-of-candidates signal");
+      }
+    }
+
     pc1.setRemoteDescription(pc2_answer, step6, failed);
   }
 
