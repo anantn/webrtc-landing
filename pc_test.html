@@ -51,10 +51,12 @@
 <label for="disable_audio">Disable audio</label>
 <input type="checkbox" id="requireh264" value="Require H.264" onclick="h264StateChange(this);">
 <label for="requireh264">Require H.264 video</label>
+<input type="checkbox" id="requireg722" value="Require G.722">
+<label for="requireg722">Require G.722 audio</label>
 <div id="divH264" class="hidden">
   <br>
   <input type="checkbox" id="prefermode0" value="Prefer Mode 0">
-  <label for="prefermode0">Prefer Mode 0</label>
+  <label for="prefermode0">Prefer H.264 Mode 0</label>
 </div>
 </div><br>
 <div>
@@ -97,7 +99,9 @@
   let requireh264 = document.getElementById("requireh264");
   requireh264.checked = false;
   let prefermode0 = document.getElementById("prefermode0");
-  requireh264.checked = false;
+  prefermode0.checked = false;
+  let requireg722 = document.getElementById("requireg722");
+  requireg722.checked = false;
 
   let pc1;
   let pc2;
@@ -124,10 +128,10 @@
       else if (type == 0)
         stream.getAudioTracks()[array_index].enabled = !audio_disable.checked;
       else
-	 log("bad type");
-     }
-     else
-	 log("no stream");
+        log("bad type");
+    }
+    else
+      log("no stream");
   }
 
   function failed(code) {
@@ -136,7 +140,7 @@
 
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
-    log("Offer:  " + offer.sdp);
+    log("Offer:  " + sdpPrettyPrint(offer.sdp));
     pc1_offer = offer;
 
     if (requireh264.checked) {
@@ -146,16 +150,30 @@
         offer.sdp = preferMode0(offer.sdp);
       }
       pc1_offer = offer;
-      log("No VP8 Offer: " + offer.sdp);
+      log("No VP8 Offer: " + sdpPrettyPrint(offer.sdp));
 
-      if (offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
-        pc1.setLocalDescription(offer, step2, failed);
-      } else {
+      if (!offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
         log("No H264 found in the offer!!!");
+        return;
       }
-    } else {
-      pc1.setLocalDescription(offer, step2, failed);
     }
+    if (requireg722.checked) {
+      // to enforce the usage of G.722 we remove other codecs from the offer
+      offer.sdp = removeNonG722(offer.sdp);
+      pc1_offer = offer;
+      log("G.722 only Offer: " + sdpPrettyPrint(offer.sdp));
+
+      if (!offer.sdp.match(/a=rtpmap:[0-9]+ G722/g)) {
+        log("No G722 found in the offer!!!");
+        return;
+      }
+    }
+    pc1.setLocalDescription(offer, step2, failed);
+  }
+
+  // replace CR NL with HTML breaks
+  function sdpPrettyPrint(sdp) {
+    return sdp.replace(/[\r\n]+/g, '<br>');
   }
 
   function h264StateChange(cb)
@@ -181,6 +199,12 @@
     return updated_sdp;
   }
 
+  // Remove anything that's not G.722 from the m=audio line
+  function removeNonG722(sdp) {
+    updated_sdp = sdp.replace(/m=audio ([0-9]+) RTP\/SAVPF ([0-9 ]*)/g, "m=audio $1 RTP\/SAVPF 9");
+    return updated_sdp;
+  }
+
   function preferMode0(sdp) {
     updated_sdp = updated_sdp.replace("126 97", "97 126");
     return updated_sdp;
@@ -188,6 +212,15 @@
 
   // pc1.setLocal finished, call pc2.setRemote
   function step2() {
+    pc1.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc2.addIceCandidate(obj.candidate);
+      } else {
+        log("pc1 got end-of-candidates signal");
+      }
+    }
+
     pc2.setRemoteDescription(pc1_offer, step3, failed);
   };
 
@@ -198,22 +231,31 @@
 
   // pc2.createAnswer finished, call pc2.setLocal
   function step4(answer) {
-    log("Answer:  " + answer.sdp);
+    log("Answer:  " + sdpPrettyPrint(answer.sdp));
     pc2_answer = answer;
 
-    if (requireh264.checked) {
-      if (answer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
-        pc2.setLocalDescription(answer, step5, failed);
-      } else {
-        log("No H264 found in the answer!!!");
-      }
-    } else {
-      pc2.setLocalDescription(answer, step5, failed);
+    if ((requireh264.checked) && (!answer.sdp.match(/a=rtpmap:[0-9]+ H264/g))) {
+      log("No H264 found in the answer!!!");
+      return;
     }
+    if ((requireg722.checked) && (!answer.sdp.match(/a=rtpmap:[0-9]+ G722/g))) {
+      log("No G722 found in the answer!!!");
+      return;
+    }
+    pc2.setLocalDescription(answer, step5, failed);
   }
 
   // pc2.setLocal finished, call pc1.setRemote
   function step5() {
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc1.addIceCandidate(obj.candidate);
+      } else {
+        log("pc2 got end-of-candidates signal");
+      }
+    }
+
     pc1.setRemoteDescription(pc2_answer, step6, failed);
   }
 
@@ -263,9 +305,9 @@
       // Add stream obtained from gUM to <video> to start media flow.
       localvideo1.mozSrcObject = video1;
       if (video_disable.checked)
-	  localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
+        localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
       if (audio_disable.checked)
-	  localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
+        localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
       localvideo1.play();
       pc1.addStream(video1);
 
