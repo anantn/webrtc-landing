@@ -151,10 +151,11 @@
 
     //senders1['audio'].replaceTrack(fake_stream.getAudioTracks()[0], function() {}, failed);
     let old_video = senders1.track;
+    log(old_video);
     senders1['video'].replaceTrack(fake_stream.getVideoTracks()[0], function()
     {
       log("Replaced video with fake");
-      //old_video.stop();
+      old_video.stop();
       log("stopped old_video");
       fake_stream.getVideoTracks()[0].enabled = false;
       log("Disabled fake");
