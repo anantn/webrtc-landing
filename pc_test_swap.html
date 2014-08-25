@@ -155,6 +155,7 @@
     {
       log("Replaced video with fake");
       old_video.stop();
+      log("stopped old_video");
       fake_stream.getVideoTracks()[0].enabled = false;
       log("Disabled fake");
       navigator.mozGetUserMedia({ video: true },
