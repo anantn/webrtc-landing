@@ -39,8 +39,8 @@
 
 <div>
 <button id="tehbutton" onclick="start();">Start!</button>
-<input type="checkbox" id="fake" value="Use Fake Video/Audio for one stream" onclick="replace_track(pc1)";>
-<label for="fake">Use Fake Audio/Video for one stream</label>
+<input type="checkbox" id="fake" value="Swap video" onclick="replace_track(pc1)";>
+<label for="fake">Swap video</label>
 <input type="checkbox" id="oneway" value="one-way call">
 <label for="oneway">One-way call</label>
 <input type="checkbox" id="audio_only" value="Audio-only call">
@@ -61,10 +61,10 @@
 </div><br>
 <div>
 <div id="player1">
-<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
+<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="240" width="320" muted></video>
 <video tabindex="0" id="localvideo1" controls="controls" height="120" width="160" muted></video></div>
 <div id="player2">
-<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="240" width="320" muted></video>
 <video tabindex="0" id="localvideo2" controls="controls" height="120" width="160" muted></video></div><br>
 <br style="clear: left;" />
 </div>
@@ -91,7 +91,7 @@
   let fake = document.getElementById("fake");
   fake.checked = false;
   let oneway = document.getElementById("oneway");
-  oneway.checked = false;
+  oneway.checked = true;
   let disablenack = document.getElementById("disable_nack");
   disablenack.checked = false;
   let audio_only = document.getElementById("audio_only");
@@ -150,6 +150,7 @@
     log("replace_track");
 
     //senders1['audio'].replaceTrack(fake_stream.getAudioTracks()[0], function() {}, failed);
+    localvideo1.mozSrcObject = fake_stream;
     let old_video = senders1['video'].track;
     log(old_video);
     senders1['video'].replaceTrack(fake_stream.getVideoTracks()[0], function()
@@ -162,6 +163,7 @@
       navigator.mozGetUserMedia({ video: true },
         function(stream) {
           new_stream = stream;
+          localvideo1.mozSrcObject = stream;
           senders1['video'].replaceTrack(stream.getVideoTracks()[0],
             function() { log("Replaced video with new video"); }, failed);
         }, failed);
@@ -170,7 +172,7 @@
 
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
-    log("Offer:  " + offer.sdp);
+    //log("Offer:  " + offer.sdp);
     pc1_offer = offer;
 
     if (requireh264.checked) {
@@ -190,7 +192,7 @@
     if (disablenack.checked) {
       offer.sdp = removeNACK(offer.sdp);
     }
-    log("Final Offer: " + offer.sdp);
+    //log("Final Offer: " + offer.sdp);
     pc1.setLocalDescription(offer, step2, failed);
   }
 
@@ -244,7 +246,7 @@
 
   // pc2.createAnswer finished, call pc2.setLocal
   function step4(answer) {
-    log("Answer:  " + answer.sdp);
+    //log("Answer:  " + answer.sdp);
     pc2_answer = answer;
 
     if (requireh264.checked) {
