@@ -150,7 +150,7 @@
     log("replace_track");
 
     //senders1['audio'].replaceTrack(fake_stream.getAudioTracks()[0], function() {}, failed);
-    let old_video = senders1.track;
+    let old_video = senders1['video'].track;
     log(old_video);
     senders1['video'].replaceTrack(fake_stream.getVideoTracks()[0], function()
     {
