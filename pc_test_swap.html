@@ -157,13 +157,18 @@
     {
       log("Replaced video with fake");
       old_video.stop();
-      log("stopped old_video");
+      log("stopped old_video" + old_video);
+      if (old_video === senders1['video'].track) {
+        log("?? .track didn't change?");
+      }
+      old_video = null;
       fake_stream.getVideoTracks()[0].enabled = false;
       log("Disabled fake");
       navigator.mozGetUserMedia({ video: true },
         function(stream) {
           new_stream = stream;
           localvideo1.mozSrcObject = stream;
+          localvideo1.play();
           senders1['video'].replaceTrack(stream.getVideoTracks()[0],
             function() { log("Replaced video with new video"); }, failed);
         }, failed);
