@@ -1,5 +1,5 @@
 <html><head>
-<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
   <title>Simple mozRTCPeerConnection Video Test</title>
   <style>
     #player1 {
@@ -39,34 +39,33 @@
 
 <div>
 <button id="tehbutton" onclick="start();">Start!</button>
-<input type="checkbox" id="fake" value="Swap video" onclick="replace_track(pc1)";>
-<label for="fake">Swap video</label>
-<input type="checkbox" id="oneway" value="one-way call">
+<button id="swap" onclick="replace_track(pc1)">Swap video</button>
+<input checked="checked" id="oneway" value="one-way call" type="checkbox">
 <label for="oneway">One-way call</label>
-<input type="checkbox" id="audio_only" value="Audio-only call">
+<input id="audio_only" value="Audio-only call" type="checkbox">
 <label for="audio_only">Audio-only call</label>
-<input type="checkbox" id="disable_nack" value="Disable NACK">
+<input id="disable_nack" value="Disable NACK" type="checkbox">
 <label for="disable_nack">Disable NACK</label>
-<input type="checkbox" id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);">
+<input id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);" type="checkbox">
 <label for="disable_video">Disable video</label>
-<input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
+<input id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);" type="checkbox">
 <label for="disable_audio">Disable audio</label>
-<input type="checkbox" id="requireh264" value="Require H.264" onclick="h264StateChange(this);">
+<input id="requireh264" value="Require H.264" onclick="h264StateChange(this);" type="checkbox">
 <label for="requireh264">Require H.264 video</label>
 <div id="divH264" class="hidden">
   <br>
-  <input type="checkbox" id="prefermode0" value="Prefer Mode 0">
+  <input id="prefermode0" value="Prefer Mode 0" type="checkbox">
   <label for="prefermode0">Prefer Mode 0</label>
 </div>
 </div><br>
 <div>
 <div id="player1">
-<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="240" width="320" muted></video>
-<video tabindex="0" id="localvideo1" controls="controls" height="120" width="160" muted></video></div>
+<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" muted="muted" width="320" height="240"></video>
+<video tabindex="0" id="localvideo1" controls="controls" muted="muted" width="160" height="120"></video></div>
 <div id="player2">
-<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="240" width="320" muted></video>
-<video tabindex="0" id="localvideo2" controls="controls" height="120" width="160" muted></video></div><br>
-<br style="clear: left;" />
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" muted="muted" width="320" height="240"></video>
+<video tabindex="0" id="localvideo2" controls="controls" muted="muted" width="160" height="120"></video></div><br>
+<br style="clear: left;">
 </div>
 <div id="log"></div>
 
@@ -88,8 +87,7 @@
   let button = document.getElementById("tehbutton");
   let localvideo1 = document.getElementById("localvideo1");
   let localvideo2 = document.getElementById("localvideo2");
-  let fake = document.getElementById("fake");
-  fake.checked = false;
+  let swapped = false;
   let oneway = document.getElementById("oneway");
   oneway.checked = true;
   let disablenack = document.getElementById("disable_nack");
@@ -147,14 +145,14 @@
 
 
   function replace_track(pc) {
-    log("replace_track");
+    swapped = !swapped;
+    log("replace_track = " + swapped);
 
     //senders1['audio'].replaceTrack(fake_stream.getAudioTracks()[0], function() {}, failed);
     localvideo1.mozSrcObject = fake_stream;
     let old_video = senders1['video'].track;
     log(old_video);
-    senders1['video'].replaceTrack(fake_stream.getVideoTracks()[0], function()
-    {
+    senders1['video'].replaceTrack(fake_stream.getVideoTracks()[0], function() {
       log("Replaced video with fake");
       old_video.stop();
       log("stopped old_video" + old_video);
@@ -164,7 +162,7 @@
       old_video = null;
       fake_stream.getVideoTracks()[0].enabled = false;
       log("Disabled fake");
-      navigator.mozGetUserMedia({ video: true },
+      navigator.mozGetUserMedia({ video: { facingMode: (swapped? "environment" : "user") } },
         function(stream) {
           new_stream = stream;
           localvideo1.mozSrcObject = stream;
@@ -241,6 +239,15 @@
 
   // pc1.setLocal finished, call pc2.setRemote
   function step2() {
+    pc1.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc2.addIceCandidate(obj.candidate);
+      } else {
+        log("pc1 got end-of-candidates signal");
+      }
+    }
+
     pc2.setRemoteDescription(pc1_offer, step3, failed);
   };
 
@@ -267,6 +274,15 @@
 
   // pc2.setLocal finished, call pc1.setRemote
   function step5() {
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc1.addIceCandidate(obj.candidate);
+      } else {
+        log("pc2 got end-of-candidates signal");
+      }
+    }
+
     pc1.setRemoteDescription(pc2_answer, step6, failed);
   }
 
@@ -297,13 +313,10 @@
 
     var myrequest = { audio: true };
     if (!(audio_only.checked)) {
-      myrequest = { audio: true, video: true };
+      myrequest = { audio: true, video: {facingMode: "user"} };
     }
 
     myrequest_reverse = copy_dictionary(myrequest);
-    if (fake.checked) {
-      myrequest_reverse.fake = true;
-    }
 
     if (oneway.checked) {
        offer_constraints = { mandatory: { OfferToReceiveVideo : false,
@@ -373,6 +386,7 @@
     button.onclick = start;
   }
 </script>
+
 
 
 </body></html>
