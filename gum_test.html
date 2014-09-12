@@ -202,10 +202,18 @@ Note: Audio will feedback unless you use a headset!<br><br>
 
   function getusermedia_error(err, params) {
     if (params.video.mediaSource) {
-      message.innerHTML = "<p class='error'>" + err + "</p>" +
-        "<p>In <a href=\"about:config\">about:config</a>, please enable media.getusermedia.screensharing.enabled<br> and add this" +
-        " site's domain name to " +
-        "media.getusermedia.screensharing.allowed_domains in about:config</p>";
+      if (location.protocol != "https:") {
+        message.innerHTML = "<p class='error'>" + err + "</p>" +
+          "<p>Screen/window sharing now requires the site be loaded from an https: URL</p>" +
+          "<p>Reloading on https: in 10 seconds</p>";
+        setTimeout(function() {
+            window.location.href = "https:" + window.location.href.substring(window.location.protocol.length);
+          }, 10000);
+      } else {
+        message.innerHTML = "<p class='error'>" + err + "</p>" +
+          "<p>In <a href=\"about:config\">about:config</a>, please enable media.getusermedia.screensharing.enabled<br> and add this" +
+          " site's domain name to media.getusermedia.screensharing.allowed_domains in about:config</p>";
+      }
     } else {
         message.innerHTML = "<p class='error'>" + err + "</p>";
     }
