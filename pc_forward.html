@@ -1,0 +1,350 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title>Simple mozRTCPeerConnection Video Test</title>
+  <style>
+    #player1 {
+      position:relative;
+      width:640px;
+      height:480px;
+      float:right;
+    }
+    #player2 {
+      position:relative;
+      width:640px;
+      height:480px;
+      float:left;
+    }
+    #mainvideo {
+      position:absolute;
+      top:0;
+      left:0;
+      z-index:0;
+    }
+    #localvideo1, #localvideo2 {
+      position:absolute;
+      top:0;
+      left:0;
+      z-index:1;
+    }
+
+    .hidden 
+    {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Simple mozRTCPeerConnection Video Test</h1>
+
+<div>
+<button id="tehbutton" onclick="start();">Start!</button>
+<input type="checkbox" id="fake" value="Use Fake Video/Audio for one stream">
+<label for="fake">Use Fake Audio/Video for one stream</label>
+<input type="checkbox" id="oneway" value="one-way call">
+<label for="oneway">One-way call</label>
+<input type="checkbox" id="audio_only" value="Audio-only call">
+<label for="audio_only">Audio-only call</label>
+<input type="checkbox" id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);">
+<label for="disable_video">Disable video</label>
+<input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
+<label for="disable_audio">Disable audio</label>
+<input type="checkbox" id="requireh264" value="Require H.264" onclick="h264StateChange(this);">
+<label for="requireh264">Require H.264 video</label>
+<input type="checkbox" id="requireg722" value="Require G.722">
+<label for="requireg722">Require G.722 audio</label>
+<div id="divH264" class="hidden">
+  <br>
+  <input type="checkbox" id="prefermode0" value="Prefer Mode 0">
+  <label for="prefermode0">Prefer H.264 Mode 0</label>
+</div>
+</div><br>
+<div>
+<div id="player1">
+<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
+<video tabindex="0" id="localvideo1" controls="controls" height="120" width="160" muted></video></div>
+<div id="player2">
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
+<video tabindex="0" id="localvideo2" controls="controls" height="120" width="160" muted></video></div><br>
+<br style="clear: left;" />
+</div>
+<div id="log"></div>
+
+
+<script type="application/javascript;version=1.8">
+  // Lame clone function. Not efficient but we don't have jQuery.
+  function copy_dictionary (obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function log(msg) {
+    let div = document.getElementById("log");
+    div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
+  }
+
+  let pc1video = document.getElementById("pc1video");
+  let pc2video = document.getElementById("pc2video");
+
+  let button = document.getElementById("tehbutton");
+  let localvideo1 = document.getElementById("localvideo1");
+  let localvideo2 = document.getElementById("localvideo2");
+  let fake = document.getElementById("fake");
+  fake.checked = true;
+  let oneway = document.getElementById("oneway");
+  oneway.checked = false;
+  let audio_only = document.getElementById("audio_only");
+  audio_only.checked = false;
+  let video_disable = document.getElementById("disable_video");
+  let audio_disable = document.getElementById("disable_audio");
+  let requireh264 = document.getElementById("requireh264");
+  requireh264.checked = false;
+  let prefermode0 = document.getElementById("prefermode0");
+  prefermode0.checked = false;
+  let requireg722 = document.getElementById("requireg722");
+  requireg722.checked = false;
+
+  let pc1;
+  let pc2;
+
+  let pc1_offer;
+  let pc2_answer;
+
+  let offer_constraints;
+  let answer_constraints;
+
+  function disable_media(pc, type, array_index) {
+    log("disable_media");
+    var stream;
+    if (pc == pc1)
+      stream = localvideo1.mozSrcObject;
+    else if (pc == pc2)
+      stream = localvideo2.mozSrcObject;
+    else log("bad pc " + pc);
+
+    if (stream) {
+      log("track[" + array_index + "] = " + stream.getVideoTracks()[array_index]);
+      if (type == 1)
+        stream.getVideoTracks()[array_index].enabled = !video_disable.checked;
+      else if (type == 0)
+        stream.getAudioTracks()[array_index].enabled = !audio_disable.checked;
+      else
+        log("bad type");
+    }
+    else
+      log("no stream");
+  }
+
+  function failed(code) {
+    log("Failure callback: " + JSON.stringify(code));
+  }
+
+  // pc1.createOffer finished, call pc1.setLocal
+  function step1(offer) {
+    log("Offer:  " + sdpPrettyPrint(offer.sdp));
+    pc1_offer = offer;
+
+    if (requireh264.checked) {
+      // to enforce the usage of H264 we remove the VP8 codec from the offer
+      offer.sdp = removeVP8(offer.sdp);
+      if (prefermode0.checked) {
+        offer.sdp = preferMode0(offer.sdp);
+      }
+      pc1_offer = offer;
+      log("No VP8 Offer: " + sdpPrettyPrint(offer.sdp));
+
+      if (!offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
+        log("No H264 found in the offer!!!");
+        return;
+      }
+    }
+    if (requireg722.checked) {
+      // to enforce the usage of G.722 we remove other codecs from the offer
+      offer.sdp = removeNonG722(offer.sdp);
+      pc1_offer = offer;
+      log("G.722 only Offer: " + sdpPrettyPrint(offer.sdp));
+
+      if (!offer.sdp.match(/a=rtpmap:[0-9]+ G722/g)) {
+        log("No G722 found in the offer!!!");
+        return;
+      }
+    }
+    pc1.setLocalDescription(offer, step2, failed);
+  }
+
+  // replace CR NL with HTML breaks
+  function sdpPrettyPrint(sdp) {
+    return sdp.replace(/[\r\n]+/g, '<br>');
+  }
+
+  function h264StateChange(cb)
+  {
+    var h264opts = document.getElementById('divH264'); 
+    if(cb.checked){
+      h264opts.style.display = 'block'; 
+    } else {
+      h264opts.style.display = 'none';
+    }
+  }
+
+  // Also remove mode 0 if it's offered
+  // Note, we don't bother removing the fmtp lines, which makes a good test
+  // for some SDP parsing issues.
+  function removeVP8(sdp) {
+    updated_sdp = sdp.replace("a=rtpmap:120 VP8/90000\r\n","");
+    updated_sdp = updated_sdp.replace(/m=video ([0-9]+) RTP\/SAVPF ([0-9 ]*) 120/g, "m=video $1 RTP\/SAVPF $2");
+    updated_sdp = updated_sdp.replace(/m=video ([0-9]+) RTP\/SAVPF 120([0-9 ]*)/g, "m=video $1 RTP\/SAVPF$2");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack\r\n","");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 nack pli\r\n","");
+    updated_sdp = updated_sdp.replace("a=rtcp-fb:120 ccm fir\r\n","");
+    return updated_sdp;
+  }
+
+  // Remove anything that's not G.722 from the m=audio line
+  function removeNonG722(sdp) {
+    updated_sdp = sdp.replace(/m=audio ([0-9]+) RTP\/SAVPF ([0-9 ]*)/g, "m=audio $1 RTP\/SAVPF 9");
+    return updated_sdp;
+  }
+
+  function preferMode0(sdp) {
+    updated_sdp = updated_sdp.replace("126 97", "97 126");
+    return updated_sdp;
+  }
+
+  // pc1.setLocal finished, call pc2.setRemote
+  function step2() {
+    pc1.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc2.addIceCandidate(obj.candidate);
+      } else {
+        log("pc1 got end-of-candidates signal");
+      }
+    }
+
+    pc2.setRemoteDescription(pc1_offer, step3, failed);
+  };
+
+  // pc2.setRemote finished, call pc2.createAnswer
+  function step3() {
+    pc2.createAnswer(step4, failed,  answer_constraints);
+  }
+
+  // pc2.createAnswer finished, call pc2.setLocal
+  function step4(answer) {
+    log("Answer:  " + sdpPrettyPrint(answer.sdp));
+    pc2_answer = answer;
+
+    if ((requireh264.checked) && (!answer.sdp.match(/a=rtpmap:[0-9]+ H264/g))) {
+      log("No H264 found in the answer!!!");
+      return;
+    }
+    if ((requireg722.checked) && (!answer.sdp.match(/a=rtpmap:[0-9]+ G722/g))) {
+      log("No G722 found in the answer!!!");
+      return;
+    }
+    pc2.setLocalDescription(answer, step5, failed);
+  }
+
+  // pc2.setLocal finished, call pc1.setRemote
+  function step5() {
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc1.addIceCandidate(obj.candidate);
+      } else {
+        log("pc2 got end-of-candidates signal");
+      }
+    }
+
+    pc1.setRemoteDescription(pc2_answer, step6, failed);
+  }
+
+  // pc1.setRemote finished, media should be running!
+  function step6() {
+    log("HIP HIP HOORAY");
+  }
+
+  function start() {
+    button.innerHTML = "Stop!";
+    button.onclick = stop;
+
+    pc1 = new mozRTCPeerConnection();
+    pc2 = new mozRTCPeerConnection();
+
+    pc1.onaddstream = function(obj) {
+      log("pc1 got remote stream from pc2 " + obj.type);
+      pc1video.mozSrcObject = obj.stream;
+      pc1video.play();
+      setTimeout(pc1video.play, 1000);
+    }
+    pc2.onaddstream = function(obj) {
+      log("pc2 got remote stream from pc1 " + obj.type);
+      pc2video.mozSrcObject = obj.stream;
+      pc2video.play();
+      setTimeout(pc2video.play, 1000);
+    }
+
+    var myrequest = { audio: true };
+    if (!(audio_only.checked)) {
+      myrequest = { audio: true, video: true };
+    }
+
+    myrequest_reverse = copy_dictionary(myrequest);
+    if (fake.checked) {
+      myrequest_reverse.fake = true;
+    }
+
+    if (oneway.checked) {
+       offer_constraints = { mandatory: { OfferToReceiveVideo : false,
+                                           OfferToReceiveAudio: false } };
+       answer_constraints = { mandatory: { OfferToReceiveVideo : true,
+                                            OfferToReceiveAudio: true } };
+    }
+
+    navigator.mozGetUserMedia(myrequest, function(video1) {
+      // Add stream obtained from gUM to <video> to start media flow.
+      localvideo1.mozSrcObject = video1;
+      if (video_disable.checked)
+        localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
+      if (audio_disable.checked)
+        localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
+      localvideo1.play();
+      pc1.addStream(video1);
+
+      if (!oneway.checked) {
+        if (!fake.checked) {
+          navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
+            localvideo2.mozSrcObject = video2;
+            localvideo2.play();
+            pc2.addStream(video2);
+            // Start the signaling.
+            pc1.createOffer(step1, failed, offer_constraints );
+          }, failed);
+        } else {
+          localvideo2.src =
+          "http://ie.microsoft.com/TEStdrive/Graphics/VideoFormatSupport/big_buck_bunny_trailer_480p.webm";
+          localvideo2.play();
+          let video2 = localvideo2.mozCaptureStreamUntilEnded();
+          localvideo2.play(); // attempt in vain to get it to keep playing
+          log("video 2 = " + video2);
+          pc2.addStream(video2)
+          // Start the signaling.
+          pc1.createOffer(step1, failed, offer_constraints );
+        }
+      } else {
+        pc1.createOffer(step1, failed, offer_constraints );
+      }
+    }, failed);
+  }
+
+  function stop() {
+    pc1.close();
+    pc2.close();
+
+    button.innerHTML = "Start!";
+    button.onclick = start;
+  }
+</script>
+
+
+</body></html>
