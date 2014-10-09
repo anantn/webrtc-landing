@@ -144,17 +144,17 @@
     pc2 = new mozRTCPeerConnection();
 
     pc2.ondatachannel = function(event) {
-      channel = event.channel;
-      log("pc2 onDataChannel [" +num_channels + "] = " + channel +
-          ", stream=" + channel.stream + " id=" + channel.id +
-          ", ordered=" + channel.ordered +
-          ", label='" + channel.label + "'" +
-          ", protocol='" + channel.protocol + "'");
-      datachannels[num_channels] = channel;
+      let mychannel = event.channel;
+      log("pc2 onDataChannel [" +num_channels + "] = " + mychannel +
+          ", stream=" + mychannel.stream + " id=" + mychannel.id +
+          ", ordered=" + mychannel.ordered +
+          ", label='" + mychannel.label + "'" +
+          ", protocol='" + mychannel.protocol + "'");
+      datachannels[num_channels] = mychannel;
       num_channels++;
-      channel.binaryType = "blob";
+      mychannel.binaryType = "blob";
 
-      channel.onmessage = function(evt) {
+      mychannel.onmessage = function(evt) {
         iter2 = iter2 + 1;
         if (evt.data instanceof Blob) {
           fancy_log("*** pc1 sent Blob: " + evt.data + ", length=" + evt.data.size,"red");
@@ -162,17 +162,14 @@
           fancy_log("pc1 said: " + evt.data,"red");
         }
       };
-      channel.onopen = function() {
-        log("*** pc2 onopen fired, sending to " + channel);
-        channel.send("pc2 says Hi there!");
+      mychannel.onopen = function() {
+        log("*** pc2 onopen fired, sending to " + mychannel);
+        mychannel.send("pc2 says Hi there!");
       };
-      channel.onclose = function() {
+      mychannel.onclose = function() {
         log("*** pc2 onclose fired");
       };
     };
-    pc2.onconnection = function() {
-      log("pc2 onConnection ");
-    }
     pc2.onclosedconnection = function() {
       log("pc2 onClosedConnection ");
     }
@@ -238,17 +235,17 @@ function start() {
     }
 
     pc1.ondatachannel = function(event) {
-      channel = event.channel;
+      let mychannel = event.channel;
       // In case pc2 opens a channel
-      log("pc1 onDataChannel [" +num_channels + "] = " + channel +
-          ", stream=" + channel.stream + " id=" + channel.id +
-          ", ordered=" + channel.ordered +
-          ", label='" + channel.label + "'" +
-          ", protocol='" + channel.protocol + "'");
-      datachannels[num_channels] = channel;
+      log("pc1 onDataChannel [" +num_channels + "] = " + mychannel +
+          ", stream=" + mychannel.stream + " id=" + mychannel.id +
+          ", ordered=" + mychannel.ordered +
+          ", label='" + mychannel.label + "'" +
+          ", protocol='" + mychannel.protocol + "'");
+      datachannels[num_channels] = mychannel;
       num_channels++;
 
-      channel.onmessage = function(evt) {
+      mychannel.onmessage = function(evt) {
         if (evt.data instanceof Blob) {
           fancy_log("*** pc2 sent Blob: " + evt.data + ", length=" + evt.data.size,"blue");
         } else {
@@ -256,39 +253,13 @@ function start() {
         }
       }
 
-      channel.onopen = function() {
-        log("pc1 onopen fired for " + channel);
-        channel.send("pc1 says Hello out there...");
-        log("pc1 state: " + channel.state);
+      mychannel.onopen = function() {
+        log("pc1 onopen fired for " + mychannel);
+        mychannel.send("pc1 says Hello out there...");
+        log("pc1 state: " + mychannel.state);
       }
-      channel.onclose = function() {
+      mychannel.onclose = function() {
         log("pc1 onclose fired");
-      };
-    }
-    pc1.onconnection = function() {
-      log("pc1 onConnection ");
-      dict = preset.checked ? {protocol:"text/chat", negotiated:true,
-                               id:stream_num.value } : {}; // reliable (TCP-like)
-      dc2 = pc2.createDataChannel("This is pc2", dict);
-      channel = dc2;
-      log("pc2 ordered=" + pc2.ordered);
-      channel.binaryType = "blob";
-      log("pc2 label " + channel.label +
-          ", stream=" + channel.stream + " id=" + channel.id);
-
-      channel.onmessage = function(evt) {
-        if (evt.data instanceof Blob) {
-          fancy_log("*** pc1 sent Blob: " + evt.data,"blue");
-        } else {
-          fancy_log('pc1 said: ' + evt.data,"blue");
-        }
-      }
-      channel.onopen = function() {
-        log("pc1 onopen fired for " + channel);
-       channel.send("pc2 says Hello...");
-      }
-      channel.onclose = function() {
-        log("pc2 onclose fired");
       };
     }
     pc1.onclosedconnection = function() {
@@ -298,24 +269,32 @@ function start() {
     dict = preset.checked ? {protocol: "text/plain", negotiated:true,
                              id:stream_num.value} : {}; // reliable (TCP-like)
     dc1 = pc1.createDataChannel("This is pc1", dict);
-    channel = dc1;
-    log("pc1 ordered=" + channel.ordered);
-    channel.binaryType = "blob";
-    log("pc1 label " + channel.label +
-        ", stream=" + channel.stream + " id=" + channel.id);
+    log("pc1 ordered=" + dc1.ordered);
+    dc1.binaryType = "blob";
+    log("pc1 label " + dc1.label +
+        ", stream=" + dc1.stream + " id=" + dc1.id);
 
-    channel.onmessage = function(evt) {
+    dc1.onmessage = function(evt) {
       if (evt.data instanceof Blob) {
         fancy_log("*** pc2 sent Blob: " + evt.data,"blue");
       } else {
           fancy_log('pc2 said: ' + evt.data,"blue");
       }
     }
-    channel.onopen = function() {
-      log("pc1 onopen fired for " + channel);
-       channel.send("pc1 says Hello...");
+    dc1.onopen = function() {
+      log("pc1 onopen fired for " + dc1);
+
+      if (preset.checked) {
+        dict = preset.checked ? {protocol:"text/chat", negotiated:true,
+                                 id:stream_num.value } : {}; // reliable (TCP-like)
+        dc2 = pc2.createDataChannel("This is pc2", dict);
+        let ev = {};
+        ev.channel = dc2;
+        pc2.ondatachannel(ev);
+      }
+      dc1.send("pc1 says this will likely be queued...");
     }
-    channel.onclose = function() {
+    dc1.onclose = function() {
       log("pc1 onclose fired");
     };
 
