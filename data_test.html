@@ -6,12 +6,9 @@
 
 <table width=100% height=100%>
 <tr><td><h1>Simple WebRTC Data Channel Test</h1></td></tr>
-<tr><td>(Note: this JS code is REALLY UGLY)<b>
-     The API and wireline protocol changed on Nightly 2013/4/2 (and will in the
-     first Aurora 22). An additonal backwards-incompatible bugfix landed
-     4/9.  Summary of changes is
-     <a href="DataChannel_changes.html">here</a>.  You will not be able to
-     connect DataConnections across the change!
+<tr><td>(Note: this JS code is REALLY UGLY)<b><br>
+     It also has a bunch of code to allow testing connections in both
+     directions, and pre-negotiated connections.
 </td></tr>
 <tr><td><div>
      <button id="thebutton" onClick="start();">Start!</button>
