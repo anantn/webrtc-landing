@@ -127,17 +127,6 @@
 
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
-    pc1_offer = offer;
-    log("Offer: " + offer.sdp);
-    pc1.setLocalDescription(offer, step1_5, failed);
-  }
-
-  function step1_5() {
-    setTimeout(step2,0);
-  }
-
-  // pc1.setLocal finished, call pc2.setRemote
-  function step2() {
     pc2 = new mozRTCPeerConnection();
 
     pc2.ondatachannel = function(event) {
@@ -175,6 +164,18 @@
       log("pc2 got remote stream from pc1 " + obj.type);
     }
 
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc1.addIceCandidate(obj.candidate);
+      } else {
+        log("pc2 got end-of-candidates signal");
+      }
+    }
+
+    pc1_offer = offer;
+    log("Offer: " + offer.sdp);
+
     pc1.onicecandidate = function(obj) {
       if (obj.candidate) {
         log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
@@ -184,6 +185,15 @@
       }
     }
 
+    pc1.setLocalDescription(offer, step1_5, failed);
+  }
+
+  function step1_5() {
+    setTimeout(step2,0);
+  }
+
+  // pc1.setLocal finished, call pc2.setRemote
+  function step2() {
     pc2.setRemoteDescription(pc1_offer, step3, failed);
   };
 
@@ -201,15 +211,6 @@
 
   // pc2.setLocal finished, call pc1.setRemote
   function step5() {
-    pc2.onicecandidate = function(obj) {
-      if (obj.candidate) {
-        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
-        pc1.addIceCandidate(obj.candidate);
-      } else {
-        log("pc2 got end-of-candidates signal");
-      }
-    }
-
     pc1.setRemoteDescription(pc2_answer, step6, failed);
   }
 
