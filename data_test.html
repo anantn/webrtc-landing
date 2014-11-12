@@ -128,7 +128,11 @@
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
     pc2 = new mozRTCPeerConnection();
-
+    pc1.didSetRemote = false;
+    pc2.didSetRemote = false;
+    pc1.ice_queued = [];
+    pc2.ice_queued = [];
+    
     pc2.ondatachannel = function(event) {
       let mychannel = event.channel;
       log("pc2 onDataChannel [" +num_channels + "] = " + mychannel +
@@ -167,7 +171,11 @@
     pc2.onicecandidate = function(obj) {
       if (obj.candidate) {
         log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
-        pc1.addIceCandidate(obj.candidate);
+        if (pc1.didSetRemote) {
+          pc1.addIceCandidate(obj.candidate);
+        } else {
+          pc1.ice_queued.push(obj.candidate);
+        }
       } else {
         log("pc2 got end-of-candidates signal");
       }
@@ -179,7 +187,11 @@
     pc1.onicecandidate = function(obj) {
       if (obj.candidate) {
         log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
-        pc2.addIceCandidate(obj.candidate);
+        if (pc2.didSetRemote) {
+          pc2.addIceCandidate(obj.candidate);
+        } else {
+          pc2.ice_queued.push(obj.candidate);
+        }
       } else {
         log("pc1 got end-of-candidates signal");
       }
@@ -199,6 +211,10 @@
 
   // pc2.setRemote finished, call pc2.createAnswer
   function step3() {
+    pc2.didSetRemote = true;
+    while (pc2.ice_queued.length > 0) {
+      pc2.addIceCandidate(pc2.ice_queued.shift());
+    }
     pc2.createAnswer(step4, failed);
   }
 
@@ -216,6 +232,10 @@
 
   // pc1.setRemote finished, make a data channel
   function step6() {
+    pc1.didSetRemote = true;
+    while (pc1.ice_queued.length > 0) {
+      pc1.addIceCandidate(pc1.ice_queued.shift());
+    }
     log("HIP HIP HOORAY");
   }
 
