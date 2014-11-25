@@ -35,11 +35,12 @@
 </head>
 <body>
 
-<h1>Simple mozRTCPeerConnection Video Test</h1>
-
+<h1>Simple swap via RTPSender Video Test</h1>
+Ugly proof-of-concept.  Ignore the disabled portions of pc_test lying around.
 <div>
 <button id="tehbutton" onclick="start();">Start!</button>
 <button id="swap" onclick="replace_track(pc1)">Swap video</button>
+<div id="controls" class="hidden">
 <input checked="checked" id="oneway" value="one-way call" type="checkbox">
 <label for="oneway">One-way call</label>
 <input id="audio_only" value="Audio-only call" type="checkbox">
@@ -57,14 +58,15 @@
   <input id="prefermode0" value="Prefer Mode 0" type="checkbox">
   <label for="prefermode0">Prefer Mode 0</label>
 </div>
+</div>
 </div><br>
 <div>
 <div id="player1">
-<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" muted="muted" width="320" height="240"></video>
-<video tabindex="0" id="localvideo1" controls="controls" muted="muted" width="160" height="120"></video></div>
+<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" muted autoplay width="320" height="240"></video>
+<video tabindex="0" id="localvideo1" controls="controls" muted autoplay width="160" height="120"></video></div>
 <div id="player2">
-<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" muted="muted" width="320" height="240"></video>
-<video tabindex="0" id="localvideo2" controls="controls" muted="muted" width="160" height="120"></video></div><br>
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" muted autoplay width="320" height="240"></video>
+<video tabindex="0" id="localvideo2" controls="controls" muted autoplay width="160" height="120"></video></div><br>
 <br style="clear: left;">
 </div>
 <div id="log"></div>
@@ -83,6 +85,8 @@
 
   let pc1video = document.getElementById("pc1video");
   let pc2video = document.getElementById("pc2video");
+  pc1video.onplay = function() {log("Play for pc1");};
+  pc2video.onplay = function() {log("Play for pc2");};
 
   let button = document.getElementById("tehbutton");
   let localvideo1 = document.getElementById("localvideo1");
@@ -175,7 +179,7 @@
 
   // pc1.createOffer finished, call pc1.setLocal
   function step1(offer) {
-    //log("Offer:  " + offer.sdp);
+//    log("Offer:  " + sdpPrettyPrint(offer.sdp));
     pc1_offer = offer;
 
     if (requireh264.checked) {
@@ -185,7 +189,7 @@
         offer.sdp = preferMode0(offer.sdp);
       }
       pc1_offer = offer;
-      log("No VP8 Offer: " + offer.sdp);
+//      log("No VP8 Offer: " + sdpPrettyPrint(offer.sdp));
 
       if (!offer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
         log("No H264 found in the offer!!!");
@@ -195,8 +199,12 @@
     if (disablenack.checked) {
       offer.sdp = removeNACK(offer.sdp);
     }
-    //log("Final Offer: " + offer.sdp);
     pc1.setLocalDescription(offer, step2, failed);
+  }
+
+  // replace CR NL with HTML breaks
+  function sdpPrettyPrint(sdp) {
+    return sdp.replace(/[\r\n]+/g, '<br>');
   }
 
   function h264StateChange(cb)
@@ -241,10 +249,10 @@
   function step2() {
     pc1.onicecandidate = function(obj) {
       if (obj.candidate) {
-        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+//        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
         pc2.addIceCandidate(obj.candidate);
       } else {
-        log("pc1 got end-of-candidates signal");
+//        log("pc1 got end-of-candidates signal");
       }
     }
 
@@ -253,33 +261,33 @@
 
   // pc2.setRemote finished, call pc2.createAnswer
   function step3() {
+    pc2.didSetRemote = true;
+    while (pc2.ice_queued.length > 0) {
+      pc2.addIceCandidate(pc2.ice_queued.shift());
+    }
     pc2.createAnswer(step4, failed,  answer_constraints);
   }
 
   // pc2.createAnswer finished, call pc2.setLocal
   function step4(answer) {
-    //log("Answer:  " + answer.sdp);
+//    log("Answer:  " + sdpPrettyPrint(answer.sdp));
     pc2_answer = answer;
 
-    if (requireh264.checked) {
-      if (answer.sdp.match(/a=rtpmap:[0-9]+ H264/g)) {
-        pc2.setLocalDescription(answer, step5, failed);
-      } else {
-        log("No H264 found in the answer!!!");
-      }
-    } else {
-      pc2.setLocalDescription(answer, step5, failed);
+    if (requireh264.checked && !(answer.sdp.match(/a=rtpmap:[0-9]+ H264/g))) {
+      log("No H264 found in the answer!!!");
+      return;
     }
+    pc2.setLocalDescription(answer, step5, failed);
   }
 
   // pc2.setLocal finished, call pc1.setRemote
   function step5() {
     pc2.onicecandidate = function(obj) {
       if (obj.candidate) {
-        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+//        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
         pc1.addIceCandidate(obj.candidate);
       } else {
-        log("pc2 got end-of-candidates signal");
+//        log("pc2 got end-of-candidates signal");
       }
     }
 
@@ -288,6 +296,10 @@
 
   // pc1.setRemote finished, media should be running!
   function step6() {
+    pc1.didSetRemote = true;
+    while (pc1.ice_queued.length > 0) {
+      pc1.addIceCandidate(pc1.ice_queued.shift());
+    }
     log("HIP HIP HOORAY");
   }
 
@@ -297,18 +309,46 @@
 
     pc1 = new mozRTCPeerConnection();
     pc2 = new mozRTCPeerConnection();
+    pc1.didSetRemote = false;
+    pc2.didSetRemote = false;
+    pc1.ice_queued = [];
+    pc2.ice_queued = [];
+
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+//        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        if (pc1.didSetRemote) {
+          pc1.addIceCandidate(obj.candidate);
+        } else {
+          pc1.ice_queued.push(obj.candidate);
+        }
+      } else {
+//        log("pc2 got end-of-candidates signal");
+      }
+    }
+
+    pc1.onicecandidate = function(obj) {
+      if (obj.candidate) {
+//        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+        if (pc2.didSetRemote) {
+          pc2.addIceCandidate(obj.candidate);
+        } else {
+          pc2.ice_queued.push(obj.candidate);
+        }
+      } else {
+//        log("pc1 got end-of-candidates signal");
+      }
+    }
 
     pc1.onaddstream = function(obj) {
       log("pc1 got remote stream from pc2 " + obj.type);
       pc1video.mozSrcObject = obj.stream;
-      pc1video.play();
-      setTimeout(pc1video.play, 1000);
+      //setTimeout(pc1video.play, 1000);
     }
     pc2.onaddstream = function(obj) {
       log("pc2 got remote stream from pc1 " + obj.type);
       pc2video.mozSrcObject = obj.stream;
-      pc2video.play();
-      setTimeout(pc2video.play, 1000);
+      //setTimeout(pc2video.play, 1000);
     }
 
     var myrequest = { audio: true };
