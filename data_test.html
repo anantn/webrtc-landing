@@ -143,7 +143,9 @@
       datachannels[num_channels] = mychannel;
       num_channels++;
       mychannel.binaryType = "blob";
-
+      if (!preset.checked) {
+        dc2 = mychannel;
+      }
       mychannel.onmessage = function(evt) {
         iter2 = iter2 + 1;
         if (evt.data instanceof Blob) {
@@ -294,7 +296,7 @@ function start() {
 
     dc1.onmessage = function(evt) {
       if (evt.data instanceof Blob) {
-        fancy_log("*** pc2 sent Blob: " + evt.data,"blue");
+        fancy_log("*** pc2 sent Blob: " + evt.data + ", length=" + evt.data.size,"blue");
       } else {
           fancy_log('pc2 said: ' + evt.data,"blue");
       }
