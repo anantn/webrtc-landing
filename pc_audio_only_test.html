@@ -1,18 +1,18 @@
 <html>
 <head>
-  <title>Simple PeerConnection Constraints Test</title>
+  <title>Simple PeerConnection Audio Test</title>
 </head>
 <body>
 
-<h1>Simple PeerConnection Constraints Test</h1>
+<h1>Simple PeerConnection Audio Test</h1>
 
-<div><video id="pc1video" width="640" height="480" controls></video></div><br/>
-<div><video id="pc2video" width="640" height="480" controls></video></div><br/>
+<div><audio id="pc1audio" controls></audio></div><br/>
+<div><audio id="pc2audio"  controls></audio></div><br/>
 
 <div><button id="tehbutton" onClick="start();">Start!</button></div><br/>
 <div id="log"></div>
 
-<div><video id="localvideo" width="640" height="480" controls></video></div><br/>
+<div><audio id="localaudio" height="480" controls muted="true"></audio></div><br/>
 
 <script type="application/javascript;version=1.8">
   function log(msg) {
@@ -20,11 +20,11 @@
     div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
   }
 
-  let pc1video = document.getElementById("pc1video");
-  let pc2video = document.getElementById("pc2video");
+  let pc1audio = document.getElementById("pc1audio");
+  let pc2audio = document.getElementById("pc2audio");
 
   let button = document.getElementById("tehbutton");
-  let localvideo = document.getElementById("localvideo");
+  let localaudio = document.getElementById("localaudio");
 
   let pc1;
   let pc2;
@@ -58,12 +58,7 @@
 
   // pc2.setRemote finished, call pc2.createAnswer
   function step3() {
-    pc2.createAnswer(step4, failed, {
-      "optional": [
-        {"OfferToReceiveAudio": true},
-        {"OfferToReceiveVideo": true}
-      ]
-    });
+    pc2.createAnswer(step4, failed);
   }
 
   // pc2.createAnswer finished, call pc2.setLocal
@@ -100,35 +95,25 @@
 
     pc1.onaddstream = function(obj) {
       log("pc1 got remote stream from pc2 " + obj.type);
-      pc2video.mozSrcObject = obj.stream;
-      pc2video.play();
+      pc2audio.mozSrcObject = obj.stream;
+      pc2audio.play();
     }
     pc2.onaddstream = function(obj) {
       log("pc2 got remote stream from pc1 " + obj.type);
-      pc1video.mozSrcObject = obj.stream;
-      pc1video.play();
+      pc1audio.mozSrcObject = obj.stream;
+      pc1audio.play();
     }
 
-    navigator.mozGetUserMedia({video:true}, function(video1) {
-      // Add stream obtained from gUM to <video> to start media flow.
-      localvideo.mozSrcObject = video1;
-      localvideo.play();
-      pc1.addStream(video1);
+    navigator.mozGetUserMedia({audio:true}, function(audio1) {
+      // Add stream obtained from gUM to <audio> to start media flow.
+      localaudio.mozSrcObject = audio1;
+      localaudio.play();
+      pc1.addStream(audio1);
 
-      navigator.mozGetUserMedia({audio:true, fake:true}, function(audio1) {
-        pc1.addStream(audio1);
-        pc2.addStream(audio1);
-
-        navigator.mozGetUserMedia({video:true, fake:true}, function(video2) {
-          pc2.addStream(video2);
-          // Start the signaling.
-          pc1.createOffer(step1, failed, {
-            optional: [
-              {"OfferToReceiveAudio": true},
-              {"OfferToReceiveVideo": true}
-            ]
-          });
-        }, failed);
+      navigator.mozGetUserMedia({audio:true, fake:true}, function(audio2) {
+        pc2.addStream(audio2);
+        // Start the signaling.
+        pc1.createOffer(step1, failed);
       }, failed);
     }, failed);
   }

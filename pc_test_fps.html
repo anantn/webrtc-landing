@@ -265,6 +265,27 @@
     pc1.setRemoteDescription(pc2_answer, step6, failed);
   }
 
+  var then;
+  var last_pc1 = 0;
+  var last_pc2 = 0;
+
+  function log_fps() {
+    let now = Date.now();
+    if (now == then) {
+      setTimeout(log_fps, 1000);
+      return;
+    }
+    let delta1 = pc1video.mozPaintedFrames - last_pc1;
+    let delta2 = pc2video.mozPaintedFrames - last_pc2;
+    // XXX log at top of screen!
+    log("FPS: " + delta1/((now-then)/1000) + ", " +
+        delta2/((now-then)/1000));
+    last_pc1 = pc1video.mozPaintedFrames;
+    last_pc2 = pc2video.mozPaintedFrames;
+    then = now;
+    setTimeout(log_fps, 1000);
+  }
+
   // pc1.setRemote finished, media should be running!
   function step6() {
     pc1.didSetRemote = true;
@@ -272,6 +293,8 @@
       pc1.addIceCandidate(pc1.ice_queued.shift());
     }
     log("HIP HIP HOORAY");
+    then = Date.now();
+    setTimeout(log_fps, 1000);
   }
 
   function start() {

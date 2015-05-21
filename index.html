@@ -2,50 +2,112 @@
 <html>
   <head>
     <meta charset="utf-8"/>
-    <link href='https://fonts.googleapis.com/css?family=Gentium+Basic:400,700' rel='stylesheet' type='text/css'>
-    <title>WebRTC Test Landing Page</title>
-    <style>
-      body {
-        font-family: "Gentium Basic", serif;
-      }
-    </style>
+    <meta http-equiv="expires" content="0"/>
     <script src="detect.js"></script>
+    <script src="jquery.js"></script>
+    <script src="bootstrap.js"></script>
+    <link rel="stylesheet" href="bootstrap.css"/>
+    <title>WebRTC Test Landing Page</title>
   </head>
   <body>
-    <h2>WebRTC Test Landing Page</h2>
-    <p>Following are a few pages to test various aspects of WebRTC:</p>
-    <ul>
-      <li><a href="gum_test.html">getUserMedia</a></li>
-      <li><a href="pc_test.html">Single host PeerConnection</a></li>
-      <li><a href="data_test.html">Single host Data Channels</a></li>
-      <li><a href="gupshup/">Multi host PeerConnection</a></li>
-    </ul>
-    <h3 id="gum" style="color: red; display: none;">
-      mozGetUserMedia is missing, do you have the latest
-      <a href="http://nightly.mozilla.org/">Nightly</a> and set
-      <i>media.navigator.enabled</i> to true?
-    </h3>
-    <h3 id="pc" style="color: red; display: none;">
-      mozRTCPeerConnection is missing, do you have the latest
-      <a href="http://nightly.mozilla.org/">Nightly</a> and set
-      <i>media.peerconnection.enabled</i> to true?
-    </h3>
-    <h3 id="version" style="color: red; display: none;">
-      You have an older version of Firefox that supports WebRTC but may have
-      an incompatible API. For best results, please download the latest
-      <a href="http://nightly.mozilla.org/">Nightly</a>!
-    </h3>
-    <script>
-      if (!navigator.mozGetUserMedia) {
-        document.getElementById("gum").style.display = "block";
-      }
-      if (!window.mozRTCPeerConnection) {
-        document.getElementById("pc").style.display = "block";
-      }
-      if (BrowserDetect.browser != "Firefox" ||
-          parseInt(BrowserDetect.version, 10) < 19) {
-        document.getElementById("version").style.display = "block";
-      }
-    </script>
-  </body>
+  <div class="row">
+    <div class="hero-unit span12 offset2" style="text-align:center">
+        <h2>WebRTC Test Landing Page</h2>
+        <p>Following are a few pages to test various aspects of Mozilla's implementation of WebRTC.</p>
+    </div>
+  </div>
+    
+  <div class="row">
+  <div id="gum" class="span12 offset2 alert alert-error fade in" style="display: none;">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <h4>mozGetUserMedia is missing!</h4>
+    Do you have the latest <a href="http://nightly.mozilla.org/">Nightly</a> and set <i>media.navigator.enabled</i> to true?
+  </div>
+  </div>
+  
+  <div class="row">
+  <div id="pc" class="span12 offset2 alert alert-error" style="display: none;">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <h4>mozRTCPeerConnection is missing!</h4>
+    Do you have the latest <a href="http://nightly.mozilla.org/">Nightly</a> and set <i>media.peerconnection.enabled</i> to true?
+  </div>
+  </div>
+
+  <div class="row">
+  <div id="pc" class="span12 offset2 alert" style="display: none;">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <h4>Your Firefox is old.</h4>
+    You have an older version of Firefox that supports WebRTC but may have an incompatible API. For best results, please download the latest <a href="http://nightly.mozilla.org/">Nightly</a>!
+  </div>
+  
+  <div class="row offset2">
+      <div class="span3">
+      <div class="well">
+        <h3>getUserMedia example</h3>
+        <p></p>
+        <p><a class="btn btn-large" href="gum_test.html">Try Demo</a></p>
+        <h5>getUserMedia AEC test</h5>
+        <p><a class="btn btn-small" href="gum_test_aec.html">AEC-in-gUM test</a></p>
+      </div>
+      </div>
+    
+      <div class="span3">
+      <div class="well">
+        <h3>Single host 'chat'</h3>
+        <p>Single host 'chat' via mozRTCPeerConnection.</p>
+        <p><a class="btn btn-large" href="pc_test.html">Try Demo</a></p>
+      </div>
+      </div>
+    
+      <div class="span3">
+      <div class="well">
+        <h3>Single host DataChannels</h3>
+        <p><a class="btn btn-large" href="data_test.html">Try Demo</a></p>
+        <h5>One-way latency test</h5>
+        <p><a class="btn btn-small" href="data_latency_test.html">Latency test</a></p>
+      </div>
+      </div>
+
+      <div class="span4">
+      <div class="well">
+        <h3>Multi-person video chat</h3>
+          <b>Note: the old gupshup site has been retired; use one of these instead:</b><br>
+          <a href="https://apprtc.appspot.com/">Apprtc</a> (here is the
+          <a
+          href="https://github.com/GoogleChrome/webrtc/tree/master/samples/web/content/apprtc">apprtc source</a>)<br>
+          <a href="https://opentokrtc.com/">OpenTokRTC</a><br>
+          <a href="https://talky.io/">Talky.io</a><br>
+          <a href="https://appear.in/">appear.in</a><br>
+          <a href="https://vline.com/">VLine.com</a><br>
+          <a href="https://rtccopy.com/">RTCCopy.com</a> File transfer and
+          chat using DataChannels<br>
+          <a href="https://sharedrop.io/">sharedrop.io</a> Easy local-lan
+          p2p file transfer - uses Persona as well<br>
+      </div>
+      </div>
+  </div>
+  <hr>
+  <br>
+<!--  
+  <div class="row offset6">
+    <h2>Tests for older FF versions</h2>
+  </div>
+
+  <div class="row offset2">
+  </div>
+-->
+
+  <script>
+    if (!navigator.mozGetUserMedia) {
+      document.getElementById("gum").style.display = "block";
+    }
+    if (!window.mozRTCPeerConnection) {
+      document.getElementById("pc").style.display = "block";
+    }
+    if (BrowserDetect.browser != "Firefox" ||
+        parseInt(BrowserDetect.version, 10) < 19) {
+      document.getElementById("version").style.display = "block";
+    }
+  </script>
+</body>
 </html>

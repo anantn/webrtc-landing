@@ -1,0 +1,190 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title>Simple mozRTCPeerConnection Audio Test</title>
+</head>
+<body>
+
+<h1>Simple mozRTCPeerConnection Audio Test</h1>
+Hacked up from the Video test
+<div>
+<button id="tehbutton" onclick="start();">Start!</button>
+<input type="checkbox" id="fake" value="Use Fake Video/Audio for one stream">
+<label for="fake">Use Fake Audio/Video for one stream</label>
+<input type="checkbox" id="disable_video" value="Disable video" onclick="disable_media(pc1, 1, 0);">
+<label for="disable_video">Disable video</label>
+<input type="checkbox" id="disable_audio" value="Disable audio" onclick="disable_media(pc1, 0, 0);">
+<label for="disable_audio">Disable audio</label>
+<input type="checkbox" id="mute_local" value="Mute local" checked="true"
+     onclick="localvideo1.muted=!localvideo1.muted;}">
+<label for="disable_audio">Mute local</label>
+<input type="checkbox" id="mute_remote" value="Mute remote"
+     onclick="pc2video.muted=!pc2video.muted;}">
+<label for="disable_audio">Mute remote</label>
+</div><br>
+<div>
+<div id="player1">
+Remote: <audio tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="480" width="640" muted></audio>
+Local: <audio tabindex="0" id="localvideo1" controls="controls" height="120" width="160" muted></audio></div>
+<div id="player2">
+Remote: <audio tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640"></audio>
+Local: <audio tabindex="0" id="localvideo2" controls="controls" height="120" width="160" muted></audio></div><br>
+<br style="clear: left;" />
+</div>
+<div id="log"></div>
+
+
+<script type="application/javascript;version=1.8">
+  function log(msg) {
+    let div = document.getElementById("log");
+    div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
+  }
+
+  let pc1video = document.getElementById("pc1video");
+  let pc2video = document.getElementById("pc2video");
+
+  let button = document.getElementById("tehbutton");
+  let localvideo1 = document.getElementById("localvideo1");
+  let localvideo2 = document.getElementById("localvideo2");
+  let fake = document.getElementById("fake");
+  fake.checked = true;
+  let video_disable = document.getElementById("disable_video");
+  let audio_disable = document.getElementById("disable_audio");
+
+  let pc1;
+  let pc2;
+
+  let pc1_offer;
+  let pc2_answer;
+
+  function disable_media(pc, type, array_index) {
+    log("disable_media");
+    var stream;
+    if (pc == pc1)
+      stream = localvideo1.mozSrcObject;
+    else if (pc == pc2)
+      stream = localvideo2.mozSrcObject;
+    else log("bad pc " + pc);
+
+    if (stream) {
+      log("track[" + array_index + "] = " + stream.getVideoTracks()[array_index]);
+      if (type == 1)
+        stream.getVideoTracks()[array_index].enabled = !video_disable.checked;
+      else if (type == 0)
+        stream.getAudioTracks()[array_index].enabled = !audio_disable.checked;
+      else
+	 log("bad type");
+     }
+     else
+	 log("no stream");
+  }
+
+  function failed(code) {
+    log("Failure callback: " + code);
+  }
+
+  // pc1.createOffer finished, call pc1.setLocal
+  function step1(offer) {
+    log("Offer:  " + offer.sdp);
+    pc1_offer = offer;
+    pc1.setLocalDescription(offer, step2, failed);
+  }
+
+  // pc1.setLocal finished, call pc2.setRemote
+  function step2() {
+    pc1.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc2.addIceCandidate(obj.candidate);
+      } else {
+        log("pc1 got end-of-candidates signal");
+      }
+    }
+
+    pc2.setRemoteDescription(pc1_offer, step3, failed);
+  };
+
+  // pc2.setRemote finished, call pc2.createAnswer
+  function step3() {
+    pc2.createAnswer(step4, failed);
+  }
+
+  // pc2.createAnswer finished, call pc2.setLocal
+  function step4(answer) {
+    pc2_answer = answer;
+    pc2.setLocalDescription(answer, step5, failed);
+  }
+
+  // pc2.setLocal finished, call pc1.setRemote
+  function step5() {
+    pc2.onicecandidate = function(obj) {
+      if (obj.candidate) {
+        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
+        pc1.addIceCandidate(obj.candidate);
+      } else {
+        log("pc2 got end-of-candidates signal");
+      }
+    }
+
+    pc1.setRemoteDescription(pc2_answer, step6, failed);
+  }
+
+  // pc1.setRemote finished, media should be running!
+  function step6() {
+    log("HIP HIP HOORAY");
+  }
+
+  function start() {
+    button.innerHTML = "Stop!";
+    button.onclick = stop;
+
+    pc1 = new mozRTCPeerConnection();
+    pc2 = new mozRTCPeerConnection();
+
+    pc1.onaddstream = function(obj) {
+      log("pc1 got remote stream from pc2 " + obj.type);
+      pc1video.mozSrcObject = obj.stream;
+      pc1video.play();
+    }
+    pc2.onaddstream = function(obj) {
+      log("pc2 got remote stream from pc1 " + obj.type);
+      pc2video.mozSrcObject = obj.stream;
+      pc2video.play();
+    }
+
+    var myrequest;
+    if (fake.checked) {
+      myrequest = {video: false, audio: true, fake: true};
+    } else {
+      myrequest = {video: false, audio: true};
+    }
+    navigator.mozGetUserMedia({video:false, audio:true}, function(video1) {
+      // Add stream obtained from gUM to <audio> to start media flow.
+      localvideo1.mozSrcObject = video1;
+      if (video_disable.checked)
+	  localvideo1.mozSrcObject.getVideoTracks()[0].enabled = false;
+      if (audio_disable.checked)
+	  localvideo1.mozSrcObject.getAudioTracks()[0].enabled = false;
+      localvideo1.play();
+      pc1.addStream(video1);
+
+      navigator.mozGetUserMedia(myrequest, function(video2) {
+        localvideo2.mozSrcObject = video2;
+        localvideo2.play();
+        pc2.addStream(video2);
+        // Start the signaling.
+        pc1.createOffer(step1, failed);
+      }, failed);
+    }, failed);
+  }
+
+  function stop() {
+    pc1.close();
+    pc2.close();
+
+    button.innerHTML = "Start!";
+    button.onclick = start;
+  }
+</script>
+
+
+</body></html>

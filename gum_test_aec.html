@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html>
-<head>
+<html><head>
   <title>gUM Test Page</title>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8" charset="utf-8">
-  <link href='https://fonts.googleapis.com/css?family=Gentium+Basic:400,700' rel='stylesheet' type='text/css'>
+  <link href="gum_test_aec_files/css.css" rel="stylesheet" type="text/css">
   <style>
     #main {
       display: block;
@@ -33,7 +32,7 @@
       font-family: "Gentium Basic", serif;
     }
     input {
-      font-size: 28px;
+      font-size: 20px;
       font-family: "Gentium Basic", serif;
     }
     p {
@@ -54,9 +53,6 @@ Note: Audio will feedback unless you use a headset!<br><br>
       <input value="Audio" onclick="startAudio();" type="button">
       <input value="Audio &amp; Video" onclick="startAudioVideo();" type="button">
       <input value="Picture" onclick="startPicture();" type="button">
-      <input value="Screen" onclick="startScreen();" type="button">
-      <input value="Window" onclick="startWindow();" type="button">
-      <input value="Application" onclick="startApplication();" type="button">
     </div>
     <div id="images">
        <div id="content"></div>
@@ -68,11 +64,39 @@ Note: Audio will feedback unless you use a headset!<br><br>
       <input value="Pause/Play" onclick="pauseMedia();" type="button">
       <input id="snapshot" value="Snapshot" onclick="startSnapshot();" type="button">
     </div>
+    <hr>
+    <div id="background">
+      Background audio:
+      <input value="Start" onclick="startBackground();" type="button">
+      <input value="Stop" onclick="stopBackground();" type="button">
+    </div>
   </div>
 
   <script type="application/javascript">
+  var start = document.getElementById("startbuttons");
+  var stop = document.getElementById("stopbuttons");
+
+  var background = document.getElementById("background");
+  var message = document.getElementById("message");
+  var content = document.getElementById("content");
+  var frames = document.getElementById("frames");
+  var snapshot = document.getElementById("snapshot");
+
   var video_status = false;
   var video = document.createElement("video");
+  var song = document.createElement("audio");
+  song.setAttribute("controls", true);
+  song.setAttribute("loop", true);
+
+  if (0) {
+    content.appendChild(song);
+    song.play();
+  } else {
+    var songplay = document.createElement("audio");
+    songplay.setAttribute("controls", true);
+    background.appendChild(songplay);
+  }
+
   video.setAttribute("width", 640);
   video.setAttribute("height", 480);
 
@@ -85,58 +109,27 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var picture_status = false;
   var picture = document.createElement("img");
 
-  var start = document.getElementById("startbuttons");
-  var stop = document.getElementById("stopbuttons");
-
-  var message = document.getElementById("message");
-  var content = document.getElementById("content");
-  var frames = document.getElementById("frames");
-  var snapshot = document.getElementById("snapshot");
   
   var saved_stream = null;
   var capturing = false;
+
+  function startBackground() {
+    song.src = "test.ogg";
+    songplay.mozSrcObject = song.mozCaptureStream();
+    song.play();
+    songplay.play();
+  }
+
+  function stopBackground() {
+    song.pause();
+    songplay.pause();
+  }
 
   function startVideo() {
     video_status = true;
     startMedia({video:true});
   }
 
-  function startScreen() {
-    video_status = true;
-    mediaConstraints = {
-      video: {
-        mozMediaSource: "screen",
-        mediaSource: "screen"
-      }
-    };
-    message.innerHTML = "<p>Note: enable media.getusermedia.screensharing.enabled in about:config</p>";
-    startMedia(mediaConstraints);
-  }
-  
-  function startWindow() {
-    video_status = true;
-    mediaConstraints = {
-      video: {
-        mozMediaSource: "window",
-        mediaSource: "window"
-      }
-    };
-    message.innerHTML = "<p>Note: enable media.getusermedia.screensharing.enabled in about:config</p>";
-    startMedia(mediaConstraints);
-  }
-  
-  function startApplication() {
-    video_status = true;
-    mediaConstraints = {
-      video: {
-        mozMediaSource: "application",
-        mediaSource: "application"
-      }
-    };
-    message.innerHTML = "<p>Note: enable media.getusermedia.screensharing.enabled in about:config</p>";
-    startMedia(mediaConstraints);
-  }
-  
   function startAudioVideo() {
     video_status = true;
     audio_status = true;
@@ -201,26 +194,6 @@ Note: Audio will feedback unless you use a headset!<br><br>
     }
   }
 
-  function getusermedia_error(err, params) {
-    if (params.video.mediaSource) {
-      if (location.protocol != "https:") {
-        message.innerHTML = "<p class='error'>" + err + "</p>" +
-          "<p>Screen/window sharing now requires the site be loaded from an https: URL</p>" +
-          "<p>Reloading on https: in 10 seconds</p>";
-        setTimeout(function() {
-            window.location.href = "https:" + window.location.href.substring(window.location.protocol.length);
-          }, 10000);
-      } else {
-        message.innerHTML = "<p class='error'>" + err + "</p>" +
-          "<p>In <a href=\"about:config\">about:config</a>, please enable media.getusermedia.screensharing.enabled<br> and add this" +
-          " site's domain name to media.getusermedia.screensharing.allowed_domains in about:config</p>";
-      }
-    } else {
-        message.innerHTML = "<p class='error'>" + err + "</p>";
-    }
-    stopMedia();
-  }
-
   function startMedia(param) {
     stop.style.display = "block";
     start.style.display = "none";
@@ -235,6 +208,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
           stopbuttons.appendChild(snapshot);
         } else if (audio_status) {
           content.appendChild(audio);
+          audio.muted = true;
           audio.mozSrcObject = stream;
           audio.play();
         } else if (picture_status) {
@@ -244,9 +218,13 @@ Note: Audio will feedback unless you use a headset!<br><br>
             window.URL.revokeObjectURL(this.src);
           }
         }
-      }, function (err) { getusermedia_error(err, param); });
+      }, function(err) {
+        message.innerHTML = "<p class='error'>" + err + "</p>";
+        stopMedia();
+      });
     } catch(e) {
-      getusermedia_error(e, param);
+      message.innerHTML = "<p class='error'>" + e + "</p>";
+      stopMedia();
     }
   }
 
@@ -281,5 +259,6 @@ Note: Audio will feedback unless you use a headset!<br><br>
   }
 </script>
 
-</body>
-</html>
+
+
+</body></html>

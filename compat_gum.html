@@ -54,9 +54,6 @@ Note: Audio will feedback unless you use a headset!<br><br>
       <input value="Audio" onclick="startAudio();" type="button">
       <input value="Audio &amp; Video" onclick="startAudioVideo();" type="button">
       <input value="Picture" onclick="startPicture();" type="button">
-      <input value="Screen" onclick="startScreen();" type="button">
-      <input value="Window" onclick="startWindow();" type="button">
-      <input value="Application" onclick="startApplication();" type="button">
     </div>
     <div id="images">
        <div id="content"></div>
@@ -75,6 +72,7 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var video = document.createElement("video");
   video.setAttribute("width", 640);
   video.setAttribute("height", 480);
+  video.setAttribute("autoplay","autoplay");
 
   var snapshots = [];
 
@@ -96,67 +94,96 @@ Note: Audio will feedback unless you use a headset!<br><br>
   var saved_stream = null;
   var capturing = false;
 
-  function startVideo() {
-    video_status = true;
-    startMedia({video:true});
+  // polyfill based on code from webrtc.org
+  // http://review.webrtc.org/930012/patch/2001/3002
+  var getUserMedia = null;
+  var attachMediaStream = null;
+  var detachMediaStream = null;
+  var stopMediaStream = null;
+
+  window.URL = window.URL || window.webkitURL;
+
+  if (navigator.mozGetUserMedia) {
+    console.log("This appears to be Firefox");
+
+    // The RTCPeerConnection object.
+    RTCPeerConnection = mozRTCPeerConnection;
+
+    // Get UserMedia (only difference is the prefix).
+    // Code from Adam Barth.
+    getUserMedia = navigator.mozGetUserMedia.bind(navigator);
+
+    // Attach a media stream to an element.
+    attachMediaStream = function(element, stream) {
+      console.log("Attaching media stream");
+      element.mozSrcObject = stream;
+    };
+
+    detachMediaStream = function(element) {
+      var temp = element.mozSrcObject;
+      element.mozSrcObject = null;
+      return temp;
+    };
+
+    stopMediaStream = function(element) {
+	element.mozSrcObject.stop();
+    }
+  } else if (navigator.webkitGetUserMedia) {
+    console.log("This appears to be Chrome");
+
+    // The RTCPeerConnection object.
+    RTCPeerConnection = webkitRTCPeerConnection;
+   
+    // Get UserMedia (only difference is the prefix).
+    // Code from Adam Barth.
+    getUserMedia = navigator.webkitGetUserMedia.bind(navigator);
+   
+    // Attach a media stream to an element.
+    attachMediaStream = function(element, stream) {
+      element.src = window.URL.createObjectURL(stream);
+      //message.innerHTML = "<p>" + element.src + "</p>";
+      element._saved_stream = stream;
+    };
+
+    detachMediaStream = function(element) {
+      var temp = element._saved_stream;
+      element.src = null;
+      element._saved_stream = null;
+      return temp;
+    };
+
+    stopMediaStream = function(element) {
+      element._saved_stream.stop();
+    }
+  } else {
+    console.log("Browser does not appear to be WebRTC-capable");
   }
 
-  function startScreen() {
+  function startVideo() {
     video_status = true;
-    mediaConstraints = {
-      video: {
-        mozMediaSource: "screen",
-        mediaSource: "screen"
-      }
-    };
-    message.innerHTML = "<p>Note: enable media.getusermedia.screensharing.enabled in about:config</p>";
-    startMedia(mediaConstraints);
+    startMedia({video: true});
   }
-  
-  function startWindow() {
-    video_status = true;
-    mediaConstraints = {
-      video: {
-        mozMediaSource: "window",
-        mediaSource: "window"
-      }
-    };
-    message.innerHTML = "<p>Note: enable media.getusermedia.screensharing.enabled in about:config</p>";
-    startMedia(mediaConstraints);
-  }
-  
-  function startApplication() {
-    video_status = true;
-    mediaConstraints = {
-      video: {
-        mozMediaSource: "application",
-        mediaSource: "application"
-      }
-    };
-    message.innerHTML = "<p>Note: enable media.getusermedia.screensharing.enabled in about:config</p>";
-    startMedia(mediaConstraints);
-  }
-  
+
   function startAudioVideo() {
     video_status = true;
     audio_status = true;
-    startMedia({video:true, audio:true});
+    startMedia({video: true, audio: true});
   }
 
   function startAudio() {
     audio_status = true;
-    startMedia({audio:true});
+    startMedia({audio: true});
   }
 
   function startPicture() {
     picture_status = true;
-    startMedia({picture:true});
+    startMedia({picture: true});
   }
 
   function stopMedia() {
     if (video_status) {
-      video.mozSrcObject.stop();
-      video.mozSrcObject = null;
+      stopMediaStream(video);
+      detachMediaStream(video);
       content.removeChild(video);
       stopbuttons.removeChild(snapshot);
       snapshot.value = "Snapshot";
@@ -164,12 +191,12 @@ Note: Audio will feedback unless you use a headset!<br><br>
       capturing = false;
       video_status = false;
     } else if (audio_status) {
-      audio.mozSrcObject.stop();
-      audio.mozSrcObject = null;
+      stopMediaStream(audio);
+      detachMediaStream(audio);
       content.removeChild(audio);
       audio_status = false;
     } else if (picture_status) {
-      picture.mozSrcObject = null;
+      detachMediaStream(picture);
       content.removeChild(picture);
       picture_status = false;
     }
@@ -181,61 +208,39 @@ Note: Audio will feedback unless you use a headset!<br><br>
   function pauseMedia() {
     if (saved_stream) {
       if (video_status) {
-        video.mozSrcObject = saved_stream;
-        video.play();
+        attachMediaStream(video, saved_stream);
+	video.play();
       } else if (audio_status) {
-        audio.mozSrcObject = saved_stream;
-        audio.play();
+        attachMediaStream(audio, saved_stream);
+	audio.play();
       }
       saved_stream = null;
     } else {
       if (video_status) {
         video.pause();
-        saved_stream = video.mozSrcObject;
-        video.mozSrcObject = null;
+        saved_stream = detachMediaStream(video);
       } else if (audio_status) {
         audio.pause();
-        saved_stream = audio.mozSrcObject;
-        audio.mozSrcObject = null;
+        saved_stream = detachMediaStream(audio);
       }
     }
-  }
-
-  function getusermedia_error(err, params) {
-    if (params.video.mediaSource) {
-      if (location.protocol != "https:") {
-        message.innerHTML = "<p class='error'>" + err + "</p>" +
-          "<p>Screen/window sharing now requires the site be loaded from an https: URL</p>" +
-          "<p>Reloading on https: in 10 seconds</p>";
-        setTimeout(function() {
-            window.location.href = "https:" + window.location.href.substring(window.location.protocol.length);
-          }, 10000);
-      } else {
-        message.innerHTML = "<p class='error'>" + err + "</p>" +
-          "<p>In <a href=\"about:config\">about:config</a>, please enable media.getusermedia.screensharing.enabled<br> and add this" +
-          " site's domain name to media.getusermedia.screensharing.allowed_domains in about:config</p>";
-      }
-    } else {
-        message.innerHTML = "<p class='error'>" + err + "</p>";
-    }
-    stopMedia();
   }
 
   function startMedia(param) {
     stop.style.display = "block";
     start.style.display = "none";
     try {
-      window.navigator.mozGetUserMedia(param, function(stream) {
+      getUserMedia(param, function(stream) {
         message.innerHTML = "<p>Success!</p>";
         if (video_status) {
           content.appendChild(video);
-          video.mozSrcObject = stream;
+          attachMediaStream(video, stream);
           video.play();
           frames.innerHTML = '';
           stopbuttons.appendChild(snapshot);
         } else if (audio_status) {
           content.appendChild(audio);
-          audio.mozSrcObject = stream;
+          attachMediaStream(audio, stream);
           audio.play();
         } else if (picture_status) {
           content.appendChild(picture);
@@ -244,9 +249,13 @@ Note: Audio will feedback unless you use a headset!<br><br>
             window.URL.revokeObjectURL(this.src);
           }
         }
-      }, function (err) { getusermedia_error(err, param); });
+      }, function(err) {
+        message.innerHTML = "<p class='error'>" + err + "</p>";
+        stopMedia();
+      });
     } catch(e) {
-      getusermedia_error(e, param);
+      message.innerHTML = "<p class='error'>" + e + "</p>";
+      stopMedia();
     }
   }
 

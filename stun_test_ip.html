@@ -1,0 +1,45 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title> mozRTCPeerConnection STUN Gathering Test</title>
+</head>
+<body>
+
+<h1> mozRTCPeerConnection STUN Gathering Test</h1>
+
+<div id="log"></div>
+
+
+<script type="application/javascript;version=1.8">
+  function log(msg) {
+    let div = document.getElementById("log");
+    div.innerHTML = div.innerHTML + "<p>" + msg + "</p>";
+  }
+
+  let pc1;
+
+  function failed(code) {
+    log("Failure callback: " + JSON.stringify(code));
+  }
+
+  var configuration = { "iceServers": [{ "url": "stun:173.194.78.127:19302" }]};
+
+  pc1 = new mozRTCPeerConnection(configuration);
+  pc1.onicecandidate = function(c) {
+    log("ICE candidate: " + JSON.stringify(c));
+  }
+
+  navigator.mozGetUserMedia({video:true, fake:true},
+    function(stream) {
+      pc1.addStream(stream);
+      setTimeout(function() {
+        pc1.createOffer(function(offer) {
+          log("Created offer: " + offer.sdp.replace(/[\n]/g, '<br>'));
+        },
+        failed
+        );
+      }, 5000);
+    },
+    failed);
+
+</script>
+

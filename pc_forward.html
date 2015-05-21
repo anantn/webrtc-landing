@@ -61,10 +61,10 @@
 </div><br>
 <div>
 <div id="player1">
-<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="480" width="640" muted autoplay></video>
+<video tabindex="0" id="pc1video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
 <video tabindex="0" id="localvideo1" controls="controls" height="120" width="160" muted></video></div>
 <div id="player2">
-<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640" muted autoplay></video>
+<video tabindex="0" id="pc2video" class="mainvideo" controls="controls" height="480" width="640" muted></video>
 <video tabindex="0" id="localvideo2" controls="controls" height="120" width="160" muted></video></div><br>
 <br style="clear: left;" />
 </div>
@@ -84,8 +84,6 @@
 
   let pc1video = document.getElementById("pc1video");
   let pc2video = document.getElementById("pc2video");
-  pc1video.onplay = function() {log("Play for pc1");};
-  pc2video.onplay = function() {log("Play for pc2");};
 
   let button = document.getElementById("tehbutton");
   let localvideo1 = document.getElementById("localvideo1");
@@ -228,10 +226,6 @@
 
   // pc2.setRemote finished, call pc2.createAnswer
   function step3() {
-    pc2.didSetRemote = true;
-    while (pc2.ice_queued.length > 0) {
-      pc2.addIceCandidate(pc2.ice_queued.shift());
-    }
     pc2.createAnswer(step4, failed,  answer_constraints);
   }
 
@@ -267,10 +261,6 @@
 
   // pc1.setRemote finished, media should be running!
   function step6() {
-    pc1.didSetRemote = true;
-    while (pc1.ice_queued.length > 0) {
-      pc1.addIceCandidate(pc1.ice_queued.shift());
-    }
     log("HIP HIP HOORAY");
   }
 
@@ -280,46 +270,18 @@
 
     pc1 = new mozRTCPeerConnection();
     pc2 = new mozRTCPeerConnection();
-    pc1.didSetRemote = false;
-    pc2.didSetRemote = false;
-    pc1.ice_queued = [];
-    pc2.ice_queued = [];
-
-    pc2.onicecandidate = function(obj) {
-      if (obj.candidate) {
-        log("pc2 found ICE candidate: " + JSON.stringify(obj.candidate));
-        if (pc1.didSetRemote) {
-          pc1.addIceCandidate(obj.candidate);
-        } else {
-          pc1.ice_queued.push(obj.candidate);
-        }
-      } else {
-        log("pc2 got end-of-candidates signal");
-      }
-    }
-
-    pc1.onicecandidate = function(obj) {
-      if (obj.candidate) {
-        log("pc1 found ICE candidate: " + JSON.stringify(obj.candidate));
-        if (pc2.didSetRemote) {
-          pc2.addIceCandidate(obj.candidate);
-        } else {
-          pc2.ice_queued.push(obj.candidate);
-        }
-      } else {
-        log("pc1 got end-of-candidates signal");
-      }
-    }
 
     pc1.onaddstream = function(obj) {
       log("pc1 got remote stream from pc2 " + obj.type);
       pc1video.mozSrcObject = obj.stream;
-      //setTimeout(pc1video.play, 1000);
+      pc1video.play();
+      setTimeout(pc1video.play, 1000);
     }
     pc2.onaddstream = function(obj) {
       log("pc2 got remote stream from pc1 " + obj.type);
       pc2video.mozSrcObject = obj.stream;
-      //setTimeout(pc2video.play, 1000);
+      pc2video.play();
+      setTimeout(pc2video.play, 1000);
     }
 
     var myrequest = { audio: true };
@@ -350,13 +312,25 @@
       pc1.addStream(video1);
 
       if (!oneway.checked) {
-        navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
-          localvideo2.mozSrcObject = video2;
+        if (!fake.checked) {
+          navigator.mozGetUserMedia(myrequest_reverse, function(video2) {
+            localvideo2.mozSrcObject = video2;
+            localvideo2.play();
+            pc2.addStream(video2);
+            // Start the signaling.
+            pc1.createOffer(step1, failed, offer_constraints );
+          }, failed);
+        } else {
+          localvideo2.src =
+          "http://ie.microsoft.com/TEStdrive/Graphics/VideoFormatSupport/big_buck_bunny_trailer_480p.webm";
           localvideo2.play();
-          pc2.addStream(video2);
+          let video2 = localvideo2.mozCaptureStreamUntilEnded();
+          localvideo2.play(); // attempt in vain to get it to keep playing
+          log("video 2 = " + video2);
+          pc2.addStream(video2)
           // Start the signaling.
           pc1.createOffer(step1, failed, offer_constraints );
-        }, failed);
+        }
       } else {
         pc1.createOffer(step1, failed, offer_constraints );
       }

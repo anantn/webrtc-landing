@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!-- $Id$ -->
+<html> <head>
+<title>WebRTC DataChannel API/protocol changes
+</title>
+</head>
+
+<body>
+<h1>WebRTC DataChannel API/protocol changes have landed</h1>
+In landings for the 2013/4/2 Nightly and for Aurora 22a1, both the API and
+the wireline protocol for WebRTC have changed in an incompatible manner.
+You will have to revise your code, and also browsers from before the change
+(including FF21 Beta) will not be able to talk to browsers built on code
+after the change
+
+The changes landed virtually in-sync with the FF22->FF23 change for
+Nightly, and will be in the first FF22 Aurora build.
+
+<table><tr><td><b>Update 2013/4/9:</b><br>
+<blockquote>An incompatible change to fix a bug in the major update from 4/2 landed on
+mozilla-central (Nightly) and will be in the 2013/4/10 build.  This means
+that builds from before that change and after it will not be able to talk
+successfully, except perhaps if both protocol and label are empty.  The
+changes landed on Aurora at the same time, but likely were incorporated
+into any builds for 4/9 and after.<p>
+We apologize, but because of the bug it was impossible to avoid making an
+incompatible change to fix it, and we didn't want the protocol to carry a
+quirk forever.  We hope to avoid any future incompatible changes.
+</blockquote></td></tr></table>
+
+Here are the changes that landed 2013/4/2:
+<br><br>
+<ol>
+<li>The wireline protocol changed from a 3-way handshake to 1-way (declarative).  (See <a
+    href="http://tools.ietf.org/html/draft-jesup-rtcweb-data-protocol-04">draft-jesup-rtcweb-data-protocol-04</a>.)<br>
+     This means that implementations cannot talk across the change (and for
+     other reasons as well). FF22 Aurora and FF23 support the new
+     protocol.</li>
+<li>To use DataChannels, you must now call pc.createDataChannel() once
+    <b>before</b> calling pc.createOffer(), to inform the RTCPeerConnection
+    you want to use DataChannels.  You can make more calls to
+    createDataChannel() anytime you want.<br>In later releases, we'll support
+    re-negotation of connections and allow the first createDataChannel() to
+    occur after createOffer (it will trigger a negotiationneeded
+    event).</li>
+<li>connectDataConnection() is being removed and now has no effect.  I'll
+    try to remove it ASAP so it can be used as a flag to which side of the
+    change a browser is on.</li>
+<li>ondatachannel now takes an event instead of a raw channel.<br>This means
+    that you should use:
+<pre>function newchannel(event) { let channel = event.channel; ...; }</pre></li>
+<li>There may be naming changes to fields in the dictionary.  See the
+    dictionary and the thread following <a
+    href="http://www.w3.org/mid/5158F0FC.3070104@jesup.org">this
+    message</a> on the public-webrtc list.  The dictionary is detailed
+    there, including changes to support pre-defined/externally-negotiated channels.</li>
+</ol>
+
+For reference, here is the current dictionary we're using.  Note that
+'protocol' (if used!) is expected to be an IANA-registered string to enable
+different applications to talk, and to help even two instances of the same
+application as to the binary format of the data on a newly created channel
+that arrives via onDataChannel.
+
+<pre>
+/* If either maxRetransmitTime or maxRetransmitNum are set, it's
+   unreliable, else it's a reliable channel.  If both are set it's an
+   error.  outOfOrderAllowed can be used with any type of channel.  The
+   equivalent of UDP is { outOfOrderAllowed: true, maxRetransmitNum: 0 }.
+   The TCP equivalent is {}.
+
+   preset is set to true if the channel is being externally negotiated, and
+   no wireline OpenRequest message should be sent.  If preset is true, stream
+   can be optionally used to set a specific SCTP stream to use.  If it's
+   not set but preset is true, then the application should read the 'stream'
+   attribute from the returned DataChannel after onopen and convey it to the
+   other end to pass in via the DataChannelInit dictionary.
+ */
+
+dictionary DataChannelInit {
+  boolean outOfOrderAllowed;
+  unsigned short maxRetransmitTime;
+  unsigned short maxRetransmitNum;
+  DOMString protocol;
+  boolean preset;
+  unsigned short stream;
+};
+</pre>
+And I added to the DataChannel object webidl:
+<pre>
+  readonly attribute DOMString protocol;
+  /* the 'stream' attribute is not valid until after onopen has fired */
+  readonly attribute unsigned short stream;
+</pre>
+
+<hr>
+<address></address>
+<!-- hhmts start -->
+Last modified: Thu Apr 18 04:40:42 EDT 2013
+<!-- hhmts end -->
+</body> </html>
