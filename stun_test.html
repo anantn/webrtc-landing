@@ -21,25 +21,24 @@
     log("Failure callback: " + JSON.stringify(code));
   }
 
-  var configuration = { "iceServers": [{ "url": "stun:stun.l.google.com:19302" }]};
+  var configuration = { "iceServers": [{ "urls": ["stun:stun.l.google.com:19302" ]}]};
 
   pc1 = new mozRTCPeerConnection(configuration);
   pc1.onicecandidate = function(c) {
-    log("ICE candidate: " + JSON.stringify(c));
-  }
+    log("ICE candidate: " + JSON.stringify(c.candidate));
+  };
 
   navigator.mozGetUserMedia({video:true, fake:true},
     function(stream) {
       pc1.addStream(stream);
-      setTimeout(function() {
-        pc1.createOffer(function(offer) {
+      pc1.createOffer(function(offer) {
           log("Created offer: " + offer.sdp.replace(/[\n]/g, '<br>'));
-        },
-        failed
-        );
-      }, 5000);
-    },
-    failed);
+          pc1.setLocalDescription(offer, function() {}, failed);
+      },
+      failed
+      ) 
+  },
+  failed);
 
 </script>
 
